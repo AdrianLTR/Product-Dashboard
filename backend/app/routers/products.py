@@ -17,6 +17,7 @@ def list_products(
     categoria: str | None = Query(None),
     estado: str | None = Query(None),
     formato: str | None = Query(None),
+    familia: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(300, ge=1, le=2000),
 ):
@@ -25,7 +26,8 @@ def list_products(
 
     rows = get_report_products(report_id)
     rows = apply_dashboard_filters(
-        rows, website=website, marca=marca, categoria=categoria, estado=estado, formato=formato
+        rows, website=website, marca=marca, categoria=categoria, estado=estado,
+        formato=formato, familia=familia,
     )
     rows = apply_kpi_type_filter(rows, kpi_type, search)
 

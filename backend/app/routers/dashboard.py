@@ -56,6 +56,7 @@ def dashboard(
     formato: str | None = Query(None),
     sku: str | None = Query(None),
     nombre: str | None = Query(None),
+    familia: str | None = Query(None),
 ):
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
@@ -70,6 +71,7 @@ def dashboard(
         formato=formato,
         sku=sku,
         nombre=nombre,
+        familia=familia,
     )
     total = len(rows)
 

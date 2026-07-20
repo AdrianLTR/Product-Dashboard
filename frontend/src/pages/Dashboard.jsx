@@ -14,8 +14,10 @@ function scoreColor(score) {
 
 export default function Dashboard() {
   const { currentReportId } = useReports();
-  const { chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku, nombre, setNombre, reset, asQuery } =
-    useFilters();
+  const {
+    chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
+    nombre, setNombre, marca, setMarca, familia, setFamilia, reset, asQuery,
+  } = useFilters();
   const [data, setData] = useState(null);
   const navigate = useNavigate();
 
@@ -41,6 +43,8 @@ export default function Dashboard() {
         <div className="ml fb">
           <input placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)} />
           <input placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <input placeholder="Marca" value={marca} onChange={(e) => setMarca(e.target.value)} />
+          <input placeholder="Familia" value={familia} onChange={(e) => setFamilia(e.target.value)} />
           <input placeholder="Formato" value={formato} onChange={(e) => setFormato(e.target.value)} />
           <button className="btn" onClick={reset}>Limpiar filtros</button>
         </div>
@@ -57,13 +61,6 @@ export default function Dashboard() {
         {data.filters.stores.map((s) => (
           <span key={s} className={"chip" + (chips.web.includes(s) ? " on" : "")} onClick={() => toggleChip("web", s)}>
             {s}
-          </span>
-        ))}
-      </div>
-      <div className="fb">
-        {data.filters.categorias.slice(0, 6).map((c) => (
-          <span key={c} className={"chip" + (chips.cat.includes(c) ? " on" : "")} onClick={() => toggleChip("cat", c)}>
-            {c}
           </span>
         ))}
       </div>

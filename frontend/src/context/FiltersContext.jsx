@@ -2,13 +2,15 @@ import { createContext, useContext, useMemo, useState } from "react";
 
 const FiltersContext = createContext(null);
 
-const EMPTY = { web: [], marca: [], cat: [], estado: [] };
+const EMPTY = { web: [], estado: [] };
 
 export function FiltersProvider({ children }) {
   const [chips, setChips] = useState(EMPTY);
   const [formato, setFormato] = useState("");
   const [sku, setSku] = useState("");
   const [nombre, setNombre] = useState("");
+  const [marca, setMarca] = useState("");
+  const [familia, setFamilia] = useState("");
 
   function toggleChip(field, value) {
     setChips((prev) => {
@@ -30,24 +32,29 @@ export function FiltersProvider({ children }) {
     setFormato("");
     setSku("");
     setNombre("");
+    setMarca("");
+    setFamilia("");
   }
 
   const asQuery = useMemo(
     () => ({
       website: chips.web.join(","),
-      marca: chips.marca.join(","),
-      categoria: chips.cat.join(","),
       estado: chips.estado.join(","),
       formato,
       sku,
       nombre,
+      marca,
+      familia,
     }),
-    [chips, formato, sku, nombre]
+    [chips, formato, sku, nombre, marca, familia]
   );
 
   return (
     <FiltersContext.Provider
-      value={{ chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku, nombre, setNombre, reset, asQuery }}
+      value={{
+        chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
+        nombre, setNombre, marca, setMarca, familia, setFamilia, reset, asQuery,
+      }}
     >
       {children}
     </FiltersContext.Provider>

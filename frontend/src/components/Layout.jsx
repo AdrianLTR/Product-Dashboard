@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useReports } from "../context/ReportContext";
 
@@ -11,6 +12,12 @@ const NAV = [
 
 export default function Layout() {
   const { currentReport, reports } = useReports();
+  const [theme, setTheme] = useState(() => localStorage.getItem("ph-theme") || "dark");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("ph-theme", theme);
+  }, [theme]);
 
   return (
     <>
@@ -25,6 +32,13 @@ export default function Layout() {
             : reports.length
             ? "Selecciona un reporte"
             : "Sin reportes cargados"}
+          <button
+            className="btn"
+            title="Cambiar tema claro/oscuro"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? "☀ Claro" : "🌙 Oscuro"}
+          </button>
         </div>
       </header>
       <div className="app-shell">
