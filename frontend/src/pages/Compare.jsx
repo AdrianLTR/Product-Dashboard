@@ -87,7 +87,7 @@ export default function Compare() {
               sub="entre estos dos reportes"
             />
             <StatCard
-              label="Perdieron visibilidad"
+              label="Colocados Invisibles"
               colorClass={data.summary.became_invisible_count > 0 ? "cr" : "cw"}
               value={data.summary.became_invisible_count.toLocaleString()}
             />
