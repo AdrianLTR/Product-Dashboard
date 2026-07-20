@@ -18,6 +18,13 @@ COUNTER_FILE = DATA_DIR / "_next_id.txt"
 
 _lock = Lock()  # evita choques si dos cargas llegan al mismo tiempo
 
+# Cache en memoria de productos por reporte. Un reporte es inmutable (solo se
+# crea o se borra completo), asi que cachear es seguro. Con reportes de 25 MB
+# releer y reparsear el JSON en cada request satura el proceso, sobre todo si
+# el frontend dispara una peticion por tecla. El cache reduce respuesta de
+# ~decenas de ms a menos de 1 ms por request tras la primera carga.
+_products_cache: dict[int, list[Product]] = {}
+
 
 def _report_path(report_id: int) -> Path:
     return REPORTS_DIR / f"{report_id}.json"
@@ -41,6 +48,7 @@ def save_report(filename: str, products: list[Product]) -> dict:
     }
     payload = {"meta": meta, "products": [p.to_dict() for p in products]}
     _report_path(report_id).write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    _products_cache[report_id] = products  # ya los tenemos parseados, aprovechamos
     return meta
 
 
@@ -65,11 +73,16 @@ def get_report_meta(report_id: int) -> dict | None:
 
 
 def get_report_products(report_id: int) -> list[Product]:
+    cached = _products_cache.get(report_id)
+    if cached is not None:
+        return cached
     p = _report_path(report_id)
     if not p.exists():
         return []
     data = json.loads(p.read_text(encoding="utf-8"))
-    return [Product.from_dict(row) for row in data["products"]]
+    products = [Product.from_dict(row) for row in data["products"]]
+    _products_cache[report_id] = products
+    return products
 
 
 def delete_report(report_id: int) -> bool:
@@ -77,4 +90,5 @@ def delete_report(report_id: int) -> bool:
     if not p.exists():
         return False
     p.unlink()
+    _products_cache.pop(report_id, None)
     return True

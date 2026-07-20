@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import Bar from "../components/Bar";
@@ -20,6 +20,30 @@ export default function Dashboard() {
   } = useFilters();
   const [data, setData] = useState(null);
   const navigate = useNavigate();
+
+  // Los inputs se manejan en estado local (draft) y solo se aplican al
+  // contexto de filtros con Enter o el boton Aplicar. Evita disparar una
+  // peticion por cada tecla y saturar al backend.
+  const [draft, setDraft] = useState({ sku, nombre, marca, familia, formato });
+  useEffect(() => {
+    setDraft({ sku, nombre, marca, familia, formato });
+  }, [sku, nombre, marca, familia, formato]);
+  const hasPendingChanges = useMemo(
+    () =>
+      draft.sku !== sku ||
+      draft.nombre !== nombre ||
+      draft.marca !== marca ||
+      draft.familia !== familia ||
+      draft.formato !== formato,
+    [draft, sku, nombre, marca, familia, formato]
+  );
+  function applyDraft() {
+    setSku(draft.sku);
+    setNombre(draft.nombre);
+    setMarca(draft.marca);
+    setFamilia(draft.familia);
+    setFormato(draft.formato);
+  }
 
   useEffect(() => {
     if (!currentReportId) return;
@@ -49,14 +73,23 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="filter-bar">
-        <input type="text" placeholder="Buscar SKU…" value={sku} onChange={(e) => setSku(e.target.value)} />
-        <input type="text" placeholder="Buscar nombre…" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-        <input type="text" placeholder="Buscar marca…" value={marca} onChange={(e) => setMarca(e.target.value)} />
-        <input type="text" placeholder="Buscar familia…" value={familia} onChange={(e) => setFamilia(e.target.value)} />
-        <input type="text" placeholder="Buscar formato…" value={formato} onChange={(e) => setFormato(e.target.value)} />
-        <button className="btn" onClick={reset}>Limpiar filtros</button>
-      </div>
+      <form
+        className="filter-bar"
+        onSubmit={(e) => { e.preventDefault(); applyDraft(); }}
+      >
+        <input type="text" placeholder="Buscar SKU…" value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} />
+        <input type="text" placeholder="Buscar nombre…" value={draft.nombre} onChange={(e) => setDraft({ ...draft, nombre: e.target.value })} />
+        <input type="text" placeholder="Buscar marca…" value={draft.marca} onChange={(e) => setDraft({ ...draft, marca: e.target.value })} />
+        <input type="text" placeholder="Buscar familia…" value={draft.familia} onChange={(e) => setDraft({ ...draft, familia: e.target.value })} />
+        <input type="text" placeholder="Buscar formato…" value={draft.formato} onChange={(e) => setDraft({ ...draft, formato: e.target.value })} />
+        <button type="submit" className={"btn " + (hasPendingChanges ? "pri" : "")}>
+          {hasPendingChanges ? "Aplicar" : "Buscar"}
+        </button>
+        <button type="button" className="btn" onClick={reset}>Limpiar</button>
+        <span style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--mono)", marginLeft: "auto" }}>
+          Enter para aplicar
+        </span>
+      </form>
 
       <div className="fb">
         {data.filters.stores.map((s) => (

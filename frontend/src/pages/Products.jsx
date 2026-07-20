@@ -21,7 +21,10 @@ export default function Products() {
   const { asQuery } = useFilters();
   const [searchParams, setSearchParams] = useSearchParams();
   const type = searchParams.get("type") || "all";
+  // 'search' es lo que ya se aplico; 'draftSearch' es lo que el usuario tipea.
+  // Solo commitea con Enter/boton para no disparar una peticion por tecla.
   const [search, setSearch] = useState("");
+  const [draftSearch, setDraftSearch] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const [data, setData] = useState(null);
 
@@ -49,7 +52,25 @@ export default function Products() {
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
-          <input placeholder="Buscar SKU o nombre…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <form
+            style={{ display: "inline-flex", gap: 6 }}
+            onSubmit={(e) => { e.preventDefault(); setSearch(draftSearch); }}
+          >
+            <input
+              type="text"
+              placeholder="Buscar SKU o nombre…"
+              value={draftSearch}
+              onChange={(e) => setDraftSearch(e.target.value)}
+            />
+            <button type="submit" className={"btn " + (draftSearch !== search ? "pri" : "")}>
+              {draftSearch !== search ? "Aplicar" : "Buscar"}
+            </button>
+            {search && (
+              <button type="button" className="btn" onClick={() => { setDraftSearch(""); setSearch(""); }}>
+                Limpiar
+              </button>
+            )}
+          </form>
           <a className="btn" href={api.exportProductsUrl(currentReportId, { ...asQuery, kpi_type: type, search })}>
             ↓ Exportar Excel
           </a>
