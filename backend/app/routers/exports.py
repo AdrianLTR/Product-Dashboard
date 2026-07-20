@@ -110,21 +110,28 @@ def export_compare(
     """Exporta la comparacion entre dos reportes a xlsx (4 hojas)."""
     data = compare_reports(base_id=base_id, target_id=target_id, changes_limit=2000)
 
+    s = data["summary"]
     resumen = pd.DataFrame(
         [
-            {"Métrica": "Total antes", "Valor": data["summary"]["total_before"]},
-            {"Métrica": "Total ahora", "Valor": data["summary"]["total_after"]},
-            {"Métrica": "Delta SKUs", "Valor": data["summary"]["delta"]},
-            {"Métrica": "Nuevos", "Valor": data["summary"]["new_count"]},
-            {"Métrica": "Eliminados", "Valor": data["summary"]["removed_count"]},
-            {"Métrica": "Modificados", "Valor": data["summary"]["changed_count"]},
-            {"Métrica": "KPI antes", "Valor": data["summary"]["kpi_score_before"]},
-            {"Métrica": "KPI ahora", "Valor": data["summary"]["kpi_score_after"]},
-            {"Métrica": "Delta KPI", "Valor": data["summary"]["kpi_score_delta"]},
+            {"Métrica": "Total antes", "Valor": s["total_before"]},
+            {"Métrica": "Total ahora", "Valor": s["total_after"]},
+            {"Métrica": "Delta SKUs", "Valor": s["delta"]},
+            {"Métrica": "Nuevos", "Valor": s["new_count"]},
+            {"Métrica": "Eliminados", "Valor": s["removed_count"]},
+            {"Métrica": "Modificados", "Valor": s["changed_count"]},
+            {"Métrica": "KPI antes", "Valor": s["kpi_score_before"]},
+            {"Métrica": "KPI ahora", "Valor": s["kpi_score_after"]},
+            {"Métrica": "Delta KPI", "Valor": s["kpi_score_delta"]},
+            {"Métrica": "Visibles antes", "Valor": s["visibles_antes"]},
+            {"Métrica": "Visibles ahora", "Valor": s["visibles_ahora"]},
+            {"Métrica": "Se volvieron Visibles", "Valor": s["became_visible_count"]},
+            {"Métrica": "Perdieron visibilidad", "Valor": s["became_invisible_count"]},
         ]
     )
     nuevos = pd.DataFrame({"SKU": data["new_skus"]})
     eliminados = pd.DataFrame({"SKU": data["removed_skus"]})
+    ganaron_visible = pd.DataFrame(data["became_visible"])
+    perdieron_visible = pd.DataFrame(data["became_invisible"])
     cambios = pd.DataFrame(
         [
             {
@@ -139,6 +146,13 @@ def export_compare(
         ]
     )
     return _xlsx_response(
-        {"Resumen": resumen, "Nuevos": nuevos, "Eliminados": eliminados, "Cambios": cambios},
+        {
+            "Resumen": resumen,
+            "Nuevos": nuevos,
+            "Eliminados": eliminados,
+            "Cambios": cambios,
+            "Se volvieron Visibles": ganaron_visible,
+            "Perdieron visibilidad": perdieron_visible,
+        },
         f"Comparacion_{base_id}_vs_{target_id}_{_stamp()}.xlsx",
     )

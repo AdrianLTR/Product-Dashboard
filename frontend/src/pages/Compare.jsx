@@ -78,7 +78,48 @@ export default function Compare() {
               colorClass={data.summary.kpi_score_delta >= 0 ? "ct" : "cr"}
               value={(data.summary.kpi_score_delta >= 0 ? "+" : "") + data.summary.kpi_score_delta.toFixed(2)}
             />
+            <StatCard label="Visibles antes" value={data.summary.visibles_antes.toLocaleString()} />
+            <StatCard label="Visibles ahora" colorClass="ct" value={data.summary.visibles_ahora.toLocaleString()} />
+            <StatCard
+              label="Se volvieron Visibles"
+              colorClass="ct"
+              value={"+" + data.summary.became_visible_count.toLocaleString()}
+              sub="entre estos dos reportes"
+            />
+            <StatCard
+              label="Perdieron visibilidad"
+              colorClass={data.summary.became_invisible_count > 0 ? "cr" : "cw"}
+              value={data.summary.became_invisible_count.toLocaleString()}
+            />
           </div>
+
+          {data.became_visible.length > 0 && (
+            <div className="cc">
+              <div className="cc-t">Se volvieron Visibles ({data.summary.became_visible_count.toLocaleString()})</div>
+              <div className="tw">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Nombre</th>
+                      <th>Estado antes</th>
+                      <th>Estado ahora</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.became_visible.map((r) => (
+                      <tr key={r.sku}>
+                        <td>{r.sku}</td>
+                        <td title={r.nombre}>{r.nombre}</td>
+                        <td className="diff-rem">{r.estado_antes || "—"}</td>
+                        <td className="diff-add">{r.estado_ahora}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <div className="cc">
             <div className="cc-t">SKUs nuevos ({data.summary.new_count.toLocaleString()})</div>

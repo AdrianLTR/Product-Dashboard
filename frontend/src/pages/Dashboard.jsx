@@ -40,21 +40,22 @@ export default function Dashboard() {
           <div className="sh-title">Dashboard</div>
           <div className="sh-sub">{data.total.toLocaleString()} productos con los filtros activos</div>
         </div>
-        <div className="ml fb">
-          <input placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)} />
-          <input placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          <input placeholder="Marca" value={marca} onChange={(e) => setMarca(e.target.value)} />
-          <input placeholder="Familia" value={familia} onChange={(e) => setFamilia(e.target.value)} />
-          <input placeholder="Formato" value={formato} onChange={(e) => setFormato(e.target.value)} />
-          <button className="btn" onClick={reset}>Limpiar filtros</button>
-        </div>
-        <div className="kpi-score">
+        <div className="ml kpi-score">
           <div className="kpi-score-lbl">KPI</div>
           <div className="kpi-score-val" style={{ color: scoreColor(data.kpi_score) }}>
             {data.kpi_score.toFixed(2)}
           </div>
           <div className="kpi-score-sub">de 100 pts</div>
         </div>
+      </div>
+
+      <div className="filter-bar">
+        <input type="text" placeholder="Buscar SKU…" value={sku} onChange={(e) => setSku(e.target.value)} />
+        <input type="text" placeholder="Buscar nombre…" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <input type="text" placeholder="Buscar marca…" value={marca} onChange={(e) => setMarca(e.target.value)} />
+        <input type="text" placeholder="Buscar familia…" value={familia} onChange={(e) => setFamilia(e.target.value)} />
+        <input type="text" placeholder="Buscar formato…" value={formato} onChange={(e) => setFormato(e.target.value)} />
+        <button className="btn" onClick={reset}>Limpiar filtros</button>
       </div>
 
       <div className="fb">

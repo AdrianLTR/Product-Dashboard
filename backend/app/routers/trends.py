@@ -15,6 +15,7 @@ def trends():
     for meta in sorted(storage.list_reports(), key=lambda m: m["uploaded_at"]):
         rows = get_report_products(meta["id"])
         total = len(rows)
+        visibles = sum(1 for r in rows if (r.estado_sl or "").strip().lower() == "visible")
         out.append(
             {
                 **meta,
@@ -24,6 +25,7 @@ def trends():
                 "con_precio": sum(1 for r in rows if has_price(r.precio_regular)),
                 "sin_foto": sum(1 for r in rows if is_empty(r.foto_descriptiva_sl)),
                 "sin_familia": sum(1 for r in rows if is_empty(r.familia)),
+                "visibles": visibles,
             }
         )
     return {"reports": out}

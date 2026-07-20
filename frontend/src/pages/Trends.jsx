@@ -46,6 +46,12 @@ export default function Trends() {
         <StatCard label="Con Precio" colorClass="cb" value={last.con_precio.toLocaleString()} />
         <StatCard label="Sin Foto" colorClass="ca" value={last.sin_foto.toLocaleString()} />
         <StatCard label="Sin Familia" colorClass="ca" value={last.sin_familia.toLocaleString()} />
+        <StatCard
+          label="Visibles"
+          colorClass="ct"
+          value={last.visibles.toLocaleString()}
+          sub={prev ? `${delta(last.visibles, prev.visibles) >= 0 ? "+" : ""}${delta(last.visibles, prev.visibles).toLocaleString()} vs anterior` : ""}
+        />
       </div>
 
       {reports.length < 2 ? (
@@ -67,6 +73,7 @@ export default function Trends() {
               series={[
                 { name: "Total SKU", color: "#4a9eff", values: reports.map((r) => r.total) },
                 { name: "Completos", color: "#18c896", values: reports.map((r) => r.completos) },
+                { name: "Visibles", color: "#f59e0b", values: reports.map((r) => r.visibles) },
                 { name: "Con precio", color: "#a78bfa", values: reports.map((r) => r.con_precio) },
               ]}
             />
@@ -94,6 +101,7 @@ export default function Trends() {
                 <th>Archivo</th>
                 <th>Total</th>
                 <th>KPI Score</th>
+                <th>Visibles</th>
                 <th>Completos</th>
                 <th>Con Precio</th>
                 <th>Sin Foto</th>
@@ -101,22 +109,34 @@ export default function Trends() {
               </tr>
             </thead>
             <tbody>
-              {[...reports].reverse().map((r) => (
-                <tr key={r.id}>
-                  <td>{new Date(r.uploaded_at).toLocaleString("es-DO")}</td>
-                  <td>{r.filename}</td>
-                  <td>{r.total.toLocaleString()}</td>
-                  <td>
-                    <span className={"bdg " + (r.kpi_score >= 90 ? "ok" : r.kpi_score >= 70 ? "ne" : "ms")}>
-                      {r.kpi_score.toFixed(2)}
-                    </span>
-                  </td>
-                  <td>{r.completos.toLocaleString()}</td>
-                  <td>{r.con_precio.toLocaleString()}</td>
-                  <td>{r.sin_foto.toLocaleString()}</td>
-                  <td>{r.sin_familia.toLocaleString()}</td>
-                </tr>
-              ))}
+              {[...reports].reverse().map((r, i, arr) => {
+                const older = arr[i + 1]; // reporte inmediatamente anterior en el tiempo
+                const dv = older ? r.visibles - older.visibles : null;
+                return (
+                  <tr key={r.id}>
+                    <td>{new Date(r.uploaded_at).toLocaleString("es-DO")}</td>
+                    <td>{r.filename}</td>
+                    <td>{r.total.toLocaleString()}</td>
+                    <td>
+                      <span className={"bdg " + (r.kpi_score >= 90 ? "ok" : r.kpi_score >= 70 ? "ne" : "ms")}>
+                        {r.kpi_score.toFixed(2)}
+                      </span>
+                    </td>
+                    <td>
+                      {r.visibles.toLocaleString()}
+                      {dv !== null && (
+                        <span style={{ marginLeft: 6, color: dv >= 0 ? "var(--teal)" : "var(--red)", fontFamily: "var(--mono)", fontSize: 10 }}>
+                          {dv >= 0 ? "▲+" : "▼"}{dv}
+                        </span>
+                      )}
+                    </td>
+                    <td>{r.completos.toLocaleString()}</td>
+                    <td>{r.con_precio.toLocaleString()}</td>
+                    <td>{r.sin_foto.toLocaleString()}</td>
+                    <td>{r.sin_familia.toLocaleString()}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

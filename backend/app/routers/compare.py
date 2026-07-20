@@ -85,6 +85,28 @@ def compare_reports(
     kpi_before = _score(base_rows)
     kpi_after = _score(target_rows)
 
+    # Ganancia de visibilidad: SKUs que pasaron de no-Visible a Visible.
+    # 'became_visible' es lo que catalogaron/publicaron entre reportes.
+    def _visible(r) -> bool:
+        return (r.estado_sl or "").strip().lower() == "visible"
+
+    became_visible = []
+    became_invisible = []
+    for sku in sorted(common_skus):
+        b, t = base_idx[sku], target_idx[sku]
+        if not _visible(b) and _visible(t):
+            became_visible.append({"sku": sku, "nombre": t.nombre, "estado_antes": b.estado_sl, "estado_ahora": t.estado_sl})
+        elif _visible(b) and not _visible(t):
+            became_invisible.append({"sku": sku, "nombre": t.nombre, "estado_antes": b.estado_sl, "estado_ahora": t.estado_sl})
+    # Los SKUs nuevos que ya vienen visibles tambien cuentan como ganados
+    for sku in new_skus:
+        t = target_idx[sku]
+        if _visible(t):
+            became_visible.append({"sku": sku, "nombre": t.nombre, "estado_antes": "(nuevo)", "estado_ahora": t.estado_sl})
+
+    visibles_antes = sum(1 for r in base_rows if _visible(r))
+    visibles_ahora = sum(1 for r in target_rows if _visible(r))
+
     return {
         "base": {**base_report, "total": len(base_rows)},
         "target": {**target_report, "total": len(target_rows)},
@@ -98,8 +120,14 @@ def compare_reports(
             "kpi_score_before": kpi_before,
             "kpi_score_after": kpi_after,
             "kpi_score_delta": round(kpi_after - kpi_before, 2),
+            "visibles_antes": visibles_antes,
+            "visibles_ahora": visibles_ahora,
+            "became_visible_count": len(became_visible),
+            "became_invisible_count": len(became_invisible),
         },
         "new_skus": new_skus[:changes_limit],
         "removed_skus": removed_skus[:changes_limit],
         "changed": changed[:changes_limit],
+        "became_visible": became_visible[:changes_limit],
+        "became_invisible": became_invisible[:changes_limit],
     }

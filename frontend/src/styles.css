@@ -27,11 +27,11 @@
 }
 :root[data-theme="light"] .btn.pri { color: #ffffff; }
 
-html, body, #root { height: 100%; }
-body {
-  background: var(--bg); color: var(--tx); font-family: var(--sans);
-  font-size: 14px; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-}
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--bg); color: var(--tx); font-family: var(--sans); font-size: 14px; }
+/* #root es el contenedor real donde React monta la app: aca vive la cadena
+   flex column que permite que <main> desborde y haga scroll internamente. */
+#root { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
 .app-shell { display: flex; flex: 1; min-height: 0; }
 
@@ -95,8 +95,15 @@ main.content { flex: 1; overflow-y: auto; display: flex; flex-direction: column;
 .chip.on { background: var(--tD); border-color: var(--teal); color: var(--teal); }
 .fb { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-input[type=text], select { background: var(--s2); border: 1px solid var(--b); border-radius: 6px; color: var(--tx); font-family: var(--sans); font-size: 12px; padding: 6px 10px; outline: none; }
-input[type=text]:focus, select:focus { border-color: var(--teal); }
+/* Inputs sin type= explicito son type=text por default en el DOM, pero el
+   selector [type=text] no los agarra a menos que este declarado. */
+input, select { background: var(--s2); border: 1px solid var(--b); border-radius: 6px; color: var(--tx); font-family: var(--sans); font-size: 12px; padding: 6px 10px; outline: none; }
+input:focus, select:focus { border-color: var(--teal); }
+input::placeholder { color: var(--tx3); }
+
+/* Barra de filtros en Dashboard: fila propia, sin encimar con el titulo */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; background: var(--s2); border: 1px solid var(--b); border-radius: var(--r); }
+.filter-bar input { min-width: 130px; flex: 1 1 130px; max-width: 200px; }
 
 .tw { overflow-x: auto; border-radius: var(--r); border: 1px solid var(--b); }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
