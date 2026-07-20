@@ -5,6 +5,7 @@ import { useReports } from "../context/ReportContext";
 const NAV = [
   { to: "/upload", label: "Cargar Reporte" },
   { to: "/dashboard", label: "Dashboard" },
+  { to: "/executive", label: "Resumen Ejecutivo" },
   { to: "/stores", label: "Por Website" },
   { to: "/compare", label: "Comparar Reportes" },
   { to: "/trends", label: "Tendencia" },

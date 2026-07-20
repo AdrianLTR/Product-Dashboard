@@ -7,6 +7,10 @@ export function ReportProvider({ children }) {
   const [reports, setReports] = useState([]);
   const [currentReportId, setCurrentReportId] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Persistir la seleccion de Comparar entre navegaciones (antes se reseteaba
+  // al desmontar la pagina y el usuario tenia que reelegir cada vez).
+  const [compareBaseId, setCompareBaseId] = useState(null);
+  const [compareTargetId, setCompareTargetId] = useState(null);
 
   const refreshReports = useCallback(async () => {
     setLoading(true);
@@ -31,7 +35,10 @@ export function ReportProvider({ children }) {
 
   return (
     <ReportContext.Provider
-      value={{ reports, currentReportId, setCurrentReportId, currentReport, refreshReports, loading }}
+      value={{
+        reports, currentReportId, setCurrentReportId, currentReport, refreshReports, loading,
+        compareBaseId, setCompareBaseId, compareTargetId, setCompareTargetId,
+      }}
     >
       {children}
     </ReportContext.Provider>

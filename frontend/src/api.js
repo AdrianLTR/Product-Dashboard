@@ -63,6 +63,7 @@ export const api = {
   getProducts: (reportId, params) => request(`/reports/${reportId}/products${qs(params)}`),
   compareReports: (baseId, targetId) => request(`/compare${qs({ base_id: baseId, target_id: targetId })}`),
   getTrends: () => request("/trends"),
+  getExecutive: (reportId) => request(`/reports/${reportId}/executive`),
   // URLs de descarga directa (el navegador baja el xlsx; no pasan por fetch)
   exportProductsUrl: (reportId, params) => `${BASE}/export/products/${reportId}${qs(params)}`,
   exportStoresUrl: (reportId) => `${BASE}/export/stores/${reportId}`,

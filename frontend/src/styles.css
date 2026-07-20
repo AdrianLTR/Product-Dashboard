@@ -209,6 +209,7 @@ tr:hover td { background:rgba(255,255,255,.02); }
 @media print {
   body { height:auto; overflow:visible; background:#fff; color:#111; display:block; }
   header.top, aside, .hdr-r, .no-print { display:none !important; }
+  .no-print-hide .no-print { display:none !important; }
   .app-shell, main.content { display:block !important; overflow:visible; height:auto; }
   main.content { padding:0; }
   .exec-score, .kpi-tile, .foco, .cc { border-color:#ccc; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }

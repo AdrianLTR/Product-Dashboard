@@ -4,21 +4,38 @@ import StatCard from "../components/StatCard";
 import { useReports } from "../context/ReportContext";
 
 export default function Compare() {
-  const { reports } = useReports();
+  const { reports, compareBaseId, setCompareBaseId, compareTargetId, setCompareTargetId } = useReports();
   const sorted = useMemo(
     () => [...reports].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at)),
     [reports]
   );
-  const [targetId, setTargetId] = useState(null);
-  const [baseId, setBaseId] = useState(null);
+  // baseId/targetId viven en ReportContext para que la seleccion persista al
+  // navegar a otra pestana y volver.
+  const baseId = compareBaseId;
+  const targetId = compareTargetId;
+  const setBaseId = setCompareBaseId;
+  const setTargetId = setCompareTargetId;
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!sorted.length) return;
-    setTargetId((prev) => prev ?? sorted[sorted.length - 1].id);
-    setBaseId((prev) => prev ?? sorted[sorted.length - 2]?.id ?? sorted[sorted.length - 1].id);
-  }, [sorted]);
+    // Defaults la primera vez, o si la seleccion previa apunta a un reporte
+    // que ya no existe (fue eliminado).
+    const exists = (id) => sorted.some((r) => r.id === id);
+    if (!targetId || !exists(targetId)) {
+      setTargetId(sorted[sorted.length - 1].id);
+    }
+    if (!baseId || !exists(baseId)) {
+      setBaseId(sorted[sorted.length - 2]?.id ?? sorted[sorted.length - 1].id);
+    }
+  }, [sorted, baseId, targetId, setBaseId, setTargetId]);
+
+  function swapReports() {
+    const b = baseId, t = targetId;
+    setBaseId(t);
+    setTargetId(b);
+  }
 
   useEffect(() => {
     if (!baseId || !targetId) return;
@@ -49,6 +66,7 @@ export default function Compare() {
               <option key={r.id} value={r.id}>Nuevo: {r.filename} ({new Date(r.uploaded_at).toLocaleDateString("es-DO")})</option>
             ))}
           </select>
+          <button className="btn" onClick={swapReports} title="Intercambiar base y nuevo">⇄ Invertir</button>
           {baseId && targetId ? (
             <a className="btn" href={api.exportCompareUrl(baseId, targetId)}>↓ Exportar Excel</a>
           ) : null}
