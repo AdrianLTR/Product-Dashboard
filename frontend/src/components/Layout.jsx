@@ -6,7 +6,6 @@ const NAV = [
   { to: "/upload", label: "Cargar Reporte" },
   { to: "/dashboard", label: "Dashboard" },
   { to: "/stores", label: "Por Website" },
-  { to: "/products", label: "Detalle KPIs" },
   { to: "/compare", label: "Comparar Reportes" },
   { to: "/trends", label: "Tendencia" },
 ];

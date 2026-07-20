@@ -57,6 +57,7 @@ def _products_df(rows) -> pd.DataFrame:
 @router.get("/products/{report_id}")
 def export_products(
     report_id: int,
+    kpi_types: str | None = Query(None),
     kpi_type: str | None = Query(None),
     search: str | None = Query(None),
     website: str | None = Query(None),
@@ -66,7 +67,7 @@ def export_products(
     formato: str | None = Query(None),
     familia: str | None = Query(None),
 ):
-    """Exporta la vista de Detalle KPIs (con los mismos filtros) a xlsx."""
+    """Exporta la vista de productos filtrada (misma logica del Dashboard) a xlsx."""
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
     rows = get_report_products(report_id)
@@ -74,8 +75,8 @@ def export_products(
         rows, website=website, marca=marca, categoria=categoria, estado=estado,
         formato=formato, familia=familia,
     )
-    rows = apply_kpi_type_filter(rows, kpi_type, search)
-    view = kpi_type or "todos"
+    rows = apply_kpi_type_filter(rows, kpi_types or kpi_type, search)
+    view = (kpi_types or kpi_type or "todos").replace(",", "_")
     return _xlsx_response(
         {"Productos": _products_df(rows)},
         f"Productos_{view}_{_stamp()}.xlsx",

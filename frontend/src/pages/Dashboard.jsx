@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import Bar from "../components/Bar";
 import StatCard from "../components/StatCard";
@@ -12,14 +11,28 @@ function scoreColor(score) {
   return "var(--red)";
 }
 
+// Mapea el nombre de tarjeta con el ID del filtro KPI (mismo que espera el backend)
+const KPI_LABELS = {
+  completos: "Completos",
+  "no-familia": "Sin Familia",
+  "no-cat": "Sin Categoría",
+  "no-nombre": "Sin Nombre",
+  "no-foto": "Sin Foto",
+  "con-precio": "Con Precio",
+  "no-precio": "Sin Precio",
+};
+
+const EMBEDDED_LIMIT = 500;
+
 export default function Dashboard() {
   const { currentReportId } = useReports();
   const {
     chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
-    nombre, setNombre, marca, setMarca, familia, setFamilia, reset, asQuery,
+    nombre, setNombre, marca, setMarca, familia, setFamilia,
+    kpiTypes, toggleKpiType, setKpiTypes, reset, asQuery,
   } = useFilters();
   const [data, setData] = useState(null);
-  const navigate = useNavigate();
+  const [tableData, setTableData] = useState(null);
 
   // Los inputs se manejan en estado local (draft) y solo se aplican al
   // contexto de filtros con Enter o el boton Aplicar. Evita disparar una
@@ -50,12 +63,32 @@ export default function Dashboard() {
     api.getDashboard(currentReportId, asQuery).then(setData);
   }, [currentReportId, asQuery]);
 
+  // La tabla embebida se actualiza cuando cambian los filtros del dashboard,
+  // los tipos KPI seleccionados o el reporte activo.
+  useEffect(() => {
+    if (!currentReportId) return;
+    api
+      .getProducts(currentReportId, {
+        ...asQuery,
+        kpi_types: kpiTypes.join(","),
+        offset: 0,
+        limit: EMBEDDED_LIMIT,
+      })
+      .then(setTableData);
+  }, [currentReportId, asQuery, kpiTypes]);
+
   if (!currentReportId) {
     return <div className="emp">Carga o selecciona un reporte primero en "Cargar Reporte".</div>;
   }
   if (!data) return <div className="emp">Cargando…</div>;
 
-  const goToKpi = (type) => navigate(`/products?type=${type}`);
+  const isTypeActive = (t) => kpiTypes.includes(t);
+  const anyKpiActive = kpiTypes.length > 0;
+
+  const exportUrl = api.exportProductsUrl(currentReportId, {
+    ...asQuery,
+    kpi_types: kpiTypes.join(","),
+  });
 
   return (
     <>
@@ -73,10 +106,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <form
-        className="filter-bar"
-        onSubmit={(e) => { e.preventDefault(); applyDraft(); }}
-      >
+      <form className="filter-bar" onSubmit={(e) => { e.preventDefault(); applyDraft(); }}>
         <input type="text" placeholder="Buscar SKU…" value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} />
         <input type="text" placeholder="Buscar nombre…" value={draft.nombre} onChange={(e) => setDraft({ ...draft, nombre: e.target.value })} />
         <input type="text" placeholder="Buscar marca…" value={draft.marca} onChange={(e) => setDraft({ ...draft, marca: e.target.value })} />
@@ -121,14 +151,79 @@ export default function Dashboard() {
       </div>
 
       <div className="cgrid">
-        <StatCard label="Total SKU" value={data.cards.total.toLocaleString()} onClick={() => goToKpi("all")} />
-        <StatCard label="Completos" colorClass="ct" value={data.cards.completos.toLocaleString()} />
-        <StatCard label="Sin Familia" colorClass="ca" value={data.cards.sin_familia.toLocaleString()} onClick={() => goToKpi("no-familia")} />
-        <StatCard label="Sin Cat." colorClass="ca" value={data.cards.sin_categoria.toLocaleString()} onClick={() => goToKpi("no-cat")} />
-        <StatCard label="Sin Nombre" colorClass="cr" value={data.cards.sin_nombre.toLocaleString()} onClick={() => goToKpi("no-nombre")} />
-        <StatCard label="Sin Foto" colorClass="ca" value={data.cards.sin_foto.toLocaleString()} onClick={() => goToKpi("no-foto")} />
-        <StatCard label="Con Precio" colorClass="ct" value={data.cards.con_precio.toLocaleString()} onClick={() => goToKpi("con-precio")} />
-        <StatCard label="Sin Precio" colorClass="cr" value={data.cards.sin_precio.toLocaleString()} onClick={() => goToKpi("no-precio")} />
+        <StatCard
+          label="Total SKU"
+          value={data.cards.total.toLocaleString()}
+          onClick={() => setKpiTypes([])}
+          active={!anyKpiActive}
+          title="Clic para limpiar filtros KPI (mostrar todos)"
+        />
+        <StatCard label="Completos" colorClass="ct" value={data.cards.completos.toLocaleString()} onClick={() => toggleKpiType("completos")} active={isTypeActive("completos")} />
+        <StatCard label="Sin Familia" colorClass="ca" value={data.cards.sin_familia.toLocaleString()} onClick={() => toggleKpiType("no-familia")} active={isTypeActive("no-familia")} />
+        <StatCard label="Sin Cat." colorClass="ca" value={data.cards.sin_categoria.toLocaleString()} onClick={() => toggleKpiType("no-cat")} active={isTypeActive("no-cat")} />
+        <StatCard label="Sin Nombre" colorClass="cr" value={data.cards.sin_nombre.toLocaleString()} onClick={() => toggleKpiType("no-nombre")} active={isTypeActive("no-nombre")} />
+        <StatCard label="Sin Foto" colorClass="ca" value={data.cards.sin_foto.toLocaleString()} onClick={() => toggleKpiType("no-foto")} active={isTypeActive("no-foto")} />
+        <StatCard label="Con Precio" colorClass="ct" value={data.cards.con_precio.toLocaleString()} onClick={() => toggleKpiType("con-precio")} active={isTypeActive("con-precio")} />
+        <StatCard label="Sin Precio" colorClass="cr" value={data.cards.sin_precio.toLocaleString()} onClick={() => toggleKpiType("no-precio")} active={isTypeActive("no-precio")} />
+      </div>
+
+      {/* Tabla embebida: muestra los productos que cumplen los filtros y KPIs
+          seleccionados. Vive dentro del propio Dashboard, con scroll interno. */}
+      <div className="cc">
+        <div className="sh" style={{ marginBottom: 10 }}>
+          <div className="sh-t">
+            <div className="sh-title" style={{ fontSize: 13 }}>Productos filtrados</div>
+            <div className="sh-sub">
+              {tableData
+                ? `${tableData.total.toLocaleString()} coinciden${tableData.total > EMBEDDED_LIMIT ? ` — mostrando primeros ${EMBEDDED_LIMIT}` : ""}`
+                : "Cargando…"}
+              {anyKpiActive && (
+                <> · KPIs: {kpiTypes.map((t) => KPI_LABELS[t] || t).join(" + ")}{kpiTypes.length > 1 && " (AND)"}</>
+              )}
+            </div>
+          </div>
+          <div className="ml fb">
+            {anyKpiActive && (
+              <button className="btn" onClick={() => setKpiTypes([])}>Quitar KPIs</button>
+            )}
+            <a className="btn" href={exportUrl}>↓ Exportar Excel</a>
+          </div>
+        </div>
+
+        {tableData && tableData.total === 0 ? (
+          <div className="embedded-empty">Ningún producto cumple los filtros seleccionados.</div>
+        ) : (
+          <div className="embedded-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Nombre</th>
+                  <th>Familia</th>
+                  <th>Categoría</th>
+                  <th>Marca</th>
+                  <th>Estado SL</th>
+                  <th>Precio Regular</th>
+                  <th>Website</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(tableData?.items || []).map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.sku}</td>
+                    <td title={p.nombre}>{p.nombre || "—"}</td>
+                    <td>{p.familia || "—"}</td>
+                    <td>{p.categoria_ecommerce || "—"}</td>
+                    <td>{p.marca || "—"}</td>
+                    <td>{p.estado_sl || "—"}</td>
+                    <td>{p.precio_regular ? p.precio_regular.toLocaleString() : "—"}</td>
+                    <td title={p.website}>{p.website || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="ch2">
@@ -164,8 +259,8 @@ export default function Dashboard() {
         </div>
         <div className="cc">
           <div className="cc-t">Precio</div>
-          <Bar label="Con precio" value={data.precio.con_precio} max={data.total} color="#18c896" onClick={() => goToKpi("con-precio")} />
-          <Bar label="Sin precio" value={data.precio.sin_precio} max={data.total} color="#e04848" onClick={() => goToKpi("no-precio")} />
+          <Bar label="Con precio" value={data.precio.con_precio} max={data.total} color="#18c896" onClick={() => toggleKpiType("con-precio")} />
+          <Bar label="Sin precio" value={data.precio.sin_precio} max={data.total} color="#e04848" onClick={() => toggleKpiType("no-precio")} />
         </div>
         <div className="cc">
           <div className="cc-t">Grupos sin Familia</div>

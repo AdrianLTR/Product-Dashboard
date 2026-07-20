@@ -5,10 +5,11 @@ import { ReportProvider } from "./context/ReportContext";
 import { ToastProvider } from "./context/ToastContext";
 import Compare from "./pages/Compare";
 import Dashboard from "./pages/Dashboard";
-import Products from "./pages/Products";
 import Stores from "./pages/Stores";
 import Trends from "./pages/Trends";
 import Upload from "./pages/Upload";
+// La ruta /products (Detalle KPIs) fue consolidada dentro del Dashboard.
+// Cualquier link viejo a /products se redirige al Dashboard mas abajo.
 
 export default function App() {
   return (
@@ -22,7 +23,7 @@ export default function App() {
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/stores" element={<Stores />} />
-                <Route path="/products" element={<Products />} />
+                <Route path="/products" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/trends" element={<Trends />} />
               </Route>

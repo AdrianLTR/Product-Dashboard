@@ -62,8 +62,16 @@ main.content { flex: 1; overflow-y: auto; display: flex; flex-direction: column;
 
 .cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; }
 .sc { background: var(--s2); border: 1px solid var(--b); border-radius: var(--r); padding: 12px 14px; cursor: default; transition: transform .15s, border-color .15s; }
-.sc.clickable { cursor: pointer; }
+.sc.clickable { cursor: pointer; user-select: none; }
 .sc.clickable:hover { transform: translateY(-2px); border-color: var(--teal); }
+.sc.active { border-color: var(--teal); background: var(--tD); box-shadow: 0 0 0 1px var(--teal) inset; }
+
+/* Tabla embebida (Dashboard): altura acotada con scroll propio para no
+   empujar el resto de la pagina hacia abajo. */
+.embedded-table { max-height: 420px; overflow: auto; border-radius: var(--r); border: 1px solid var(--b); }
+.embedded-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.embedded-table thead th { position: sticky; top: 0; background: var(--s2); z-index: 2; }
+.embedded-empty { padding: 2rem 1rem; text-align: center; color: var(--tx3); font-size: 12px; }
 .sc-l { font-size: 10px; font-family: var(--mono); color: var(--tx3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
 .sc-v { font-size: 22px; font-weight: 500; line-height: 1; }
 .sc-s { font-size: 10px; color: var(--tx3); margin-top: 3px; }

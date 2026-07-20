@@ -11,6 +11,11 @@ export function FiltersProvider({ children }) {
   const [nombre, setNombre] = useState("");
   const [marca, setMarca] = useState("");
   const [familia, setFamilia] = useState("");
+  const [kpiTypes, setKpiTypes] = useState([]); // toggle multi-select desde el Dashboard
+
+  function toggleKpiType(t) {
+    setKpiTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
 
   function toggleChip(field, value) {
     setChips((prev) => {
@@ -34,6 +39,7 @@ export function FiltersProvider({ children }) {
     setNombre("");
     setMarca("");
     setFamilia("");
+    setKpiTypes([]);
   }
 
   const asQuery = useMemo(
@@ -53,7 +59,8 @@ export function FiltersProvider({ children }) {
     <FiltersContext.Provider
       value={{
         chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
-        nombre, setNombre, marca, setMarca, familia, setFamilia, reset, asQuery,
+        nombre, setNombre, marca, setMarca, familia, setFamilia,
+        kpiTypes, toggleKpiType, setKpiTypes, reset, asQuery,
       }}
     >
       {children}

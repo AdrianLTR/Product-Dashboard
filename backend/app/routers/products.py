@@ -10,7 +10,8 @@ router = APIRouter(prefix="/api/reports/{report_id}/products", tags=["products"]
 @router.get("", response_model=ProductPage)
 def list_products(
     report_id: int,
-    kpi_type: str | None = Query(None, description="all|no-nombre|no-familia|no-cat|no-foto|con-precio|no-precio"),
+    kpi_types: str | None = Query(None, description="CSV: completos,no-nombre,no-familia,no-cat,no-foto,con-precio,no-precio"),
+    kpi_type: str | None = Query(None, description="Compat: se ignora si viene kpi_types"),
     search: str | None = Query(None),
     website: str | None = Query(None),
     marca: str | None = Query(None),
@@ -29,6 +30,6 @@ def list_products(
         rows, website=website, marca=marca, categoria=categoria, estado=estado,
         formato=formato, familia=familia,
     )
-    rows = apply_kpi_type_filter(rows, kpi_type, search)
+    rows = apply_kpi_type_filter(rows, kpi_types or kpi_type, search)
 
     return {"total": len(rows), "items": rows[offset : offset + limit]}
