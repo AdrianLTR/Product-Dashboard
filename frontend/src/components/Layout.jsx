@@ -8,6 +8,7 @@ const NAV = [
   { to: "/stores", label: "Por Website" },
   { to: "/products", label: "Detalle KPIs" },
   { to: "/compare", label: "Comparar Reportes" },
+  { to: "/trends", label: "Tendencia" },
 ];
 
 export default function Layout() {

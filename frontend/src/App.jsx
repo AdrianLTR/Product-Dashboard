@@ -7,6 +7,7 @@ import Compare from "./pages/Compare";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Stores from "./pages/Stores";
+import Trends from "./pages/Trends";
 import Upload from "./pages/Upload";
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
                 <Route path="/stores" element={<Stores />} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/compare" element={<Compare />} />
+                <Route path="/trends" element={<Trends />} />
               </Route>
             </Routes>
           </HashRouter>

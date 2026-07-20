@@ -54,6 +54,45 @@ def to_float(v):
         return None
 
 
+# Los 4 atributos del KPI score (25 pts c/u). Misma formula que usan el
+# dashboard y la comparacion, centralizada para que Tendencia no divierja.
+KPI_SCORE_ATTRS = [
+    ("nombre", False),
+    ("descripcion_detallada", False),
+    ("precio_regular", True),
+    ("foto_descriptiva_sl", False),
+]
+
+COMPLETENESS_FIELDS = [
+    "nombre",
+    "familia",
+    "categoria_ecommerce",
+    "descripcion_detallada",
+    "foto_descriptiva_sl",
+    "website",
+    "estado_sl",
+]
+
+
+def kpi_score(rows) -> float:
+    total = len(rows)
+    if not total:
+        return 0.0
+    score = 0.0
+    for key, is_price in KPI_SCORE_ATTRS:
+        cnt = sum(
+            1
+            for r in rows
+            if (has_price(getattr(r, key)) if is_price else not is_empty(getattr(r, key)))
+        )
+        score += round(cnt / total * 100) * 0.25
+    return round(score, 2)
+
+
+def is_complete(row) -> bool:
+    return all(not is_empty(getattr(row, f)) for f in COMPLETENESS_FIELDS)
+
+
 def load_extra(extra: str) -> dict:
     try:
         return json.loads(extra) if extra else {}

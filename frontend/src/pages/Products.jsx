@@ -50,6 +50,9 @@ export default function Products() {
             ))}
           </select>
           <input placeholder="Buscar SKU o nombre…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <a className="btn" href={api.exportProductsUrl(currentReportId, { ...asQuery, kpi_type: type, search })}>
+            ↓ Exportar Excel
+          </a>
         </div>
       </div>
 

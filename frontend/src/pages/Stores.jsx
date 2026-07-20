@@ -23,6 +23,9 @@ export default function Stores() {
           <div className="sh-title">Métricas por Website</div>
           <div className="sh-sub">Completitud y precio por tienda, un producto puede estar en varias</div>
         </div>
+        <div className="ml">
+          <a className="btn" href={api.exportStoresUrl(currentReportId)}>↓ Exportar Excel</a>
+        </div>
       </div>
 
       {data.stores.length === 0 ? (

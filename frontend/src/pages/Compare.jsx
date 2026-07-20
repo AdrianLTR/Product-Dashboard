@@ -49,6 +49,9 @@ export default function Compare() {
               <option key={r.id} value={r.id}>Nuevo: {r.filename} ({new Date(r.uploaded_at).toLocaleDateString("es-DO")})</option>
             ))}
           </select>
+          {baseId && targetId ? (
+            <a className="btn" href={api.exportCompareUrl(baseId, targetId)}>↓ Exportar Excel</a>
+          ) : null}
         </div>
       </div>
 
