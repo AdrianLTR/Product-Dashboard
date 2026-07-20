@@ -8,6 +8,7 @@ export default function Upload() {
   const toast = useToast();
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(null); // {done, total}
   const inputRef = useRef(null);
 
   async function handleFile(file) {
@@ -17,8 +18,9 @@ export default function Upload() {
       return;
     }
     setBusy(true);
+    setProgress({ done: 0, total: 1 });
     try {
-      const report = await api.uploadReport(file);
+      const report = await api.uploadReport(file, (done, total) => setProgress({ done, total }));
       await refreshReports();
       setCurrentReportId(report.id);
       toast(`${report.row_count.toLocaleString()} productos cargados`, "ok");
@@ -26,6 +28,7 @@ export default function Upload() {
       toast(`Error al procesar el archivo: ${err.message}`, "err", 6000);
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -60,8 +63,14 @@ export default function Upload() {
         }}
       >
         <div className="upz-txt">
-          <strong>{busy ? "Procesando…" : "Arrastra el .xlsx aquí o haz clic"}</strong>
-          Reporte de Sales Layer (primera hoja)
+          <strong>
+            {busy
+              ? progress && progress.total > 1
+                ? `Subiendo ${progress.done} / ${progress.total} (${Math.round((progress.done / progress.total) * 100)}%)…`
+                : "Procesando…"
+              : "Arrastra el .xlsx aquí o haz clic"}
+          </strong>
+          {!busy && "Reporte de Sales Layer (primera hoja)"}
         </div>
         <input
           ref={inputRef}
