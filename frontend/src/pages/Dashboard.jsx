@@ -90,19 +90,65 @@ export default function Dashboard() {
     kpi_types: kpiTypes.join(","),
   });
 
+  // Focos de atencion: brechas mas grandes, ordenadas por cantidad. Sirven
+  // como worklist para el equipo — donde poner foco esta semana.
+  const focos = [
+    { key: "no-familia", label: "Sin Familia", count: data.cards.sin_familia, click: () => toggleKpiType("no-familia"), active: isTypeActive("no-familia") },
+    { key: "no-cat", label: "Sin Categoría", count: data.cards.sin_categoria, click: () => toggleKpiType("no-cat"), active: isTypeActive("no-cat") },
+    { key: "no-foto", label: "Sin Foto", count: data.cards.sin_foto, click: () => toggleKpiType("no-foto"), active: isTypeActive("no-foto") },
+    { key: "no-precio", label: "Sin Precio", count: data.cards.sin_precio, click: () => toggleKpiType("no-precio"), active: isTypeActive("no-precio") },
+    { key: "no-nombre", label: "Sin Nombre", count: data.cards.sin_nombre, click: () => toggleKpiType("no-nombre"), active: isTypeActive("no-nombre") },
+  ]
+    .map((f) => ({ ...f, pct: data.total ? Math.round((f.count / data.total) * 100) : 0 }))
+    .filter((f) => f.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
+
   return (
-    <>
+    <div className="dash-grid">
+      {/* Rail izquierdo: resumen ejecutivo del reporte (score + composición + focos) */}
+      <aside className="dash-rail">
+        <div>
+          <div className="dash-rail-title">Score de calidad</div>
+          <div className="kpi-score-val" style={{ color: scoreColor(data.kpi_score) }}>
+            {data.kpi_score.toFixed(1)}
+          </div>
+          <div className="sc-s">de 100 · {data.total.toLocaleString()} SKUs</div>
+        </div>
+        <div>
+          <div className="dash-rail-title">Composición · 25 pts c/u</div>
+          {data.kpi_attrs.map((a) => (
+            <Bar key={a.key} label={a.label} value={a.pct} max={100} color={a.color} right={`${a.pct}%`} />
+          ))}
+        </div>
+        <div>
+          <div className="dash-rail-title">Focos de atención</div>
+          {focos.length === 0 ? (
+            <div className="foco ok">
+              Sin pendientes<span className="foco-n">✓</span>
+            </div>
+          ) : (
+            focos.map((f) => (
+              <div
+                key={f.key}
+                className={"foco" + (f.pct >= 30 ? " crit" : "") + (f.active ? " active" : "")}
+                onClick={f.click}
+                style={{ cursor: "pointer", opacity: f.active ? 1 : undefined }}
+                title="Clic para filtrar la tabla"
+              >
+                {f.label}
+                <span className="foco-n">{f.count.toLocaleString()} · {f.pct}%</span>
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+
+      <div className="dash-main">
       <div className="sh">
         <div className="sh-t">
           <div className="sh-title">Dashboard</div>
           <div className="sh-sub">{data.total.toLocaleString()} productos con los filtros activos</div>
-        </div>
-        <div className="ml kpi-score">
-          <div className="kpi-score-lbl">KPI</div>
-          <div className="kpi-score-val" style={{ color: scoreColor(data.kpi_score) }}>
-            {data.kpi_score.toFixed(2)}
-          </div>
-          <div className="kpi-score-sub">de 100 pts</div>
         </div>
       </div>
 
@@ -137,16 +183,6 @@ export default function Dashboard() {
           >
             {e}
           </span>
-        ))}
-      </div>
-
-      <div className="cgrid">
-        {data.kpi_attrs.map((a) => (
-          <div className="sc" key={a.key}>
-            <div className="sc-l">{a.label} · 25 pts</div>
-            <div className="sc-v" style={{ color: a.color }}>{a.count.toLocaleString()}</div>
-            <div className="sc-s">{a.pct}% de {a.total.toLocaleString()}</div>
-          </div>
         ))}
       </div>
 
@@ -283,6 +319,7 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-    </>
+      </div>
+    </div>
   );
 }
