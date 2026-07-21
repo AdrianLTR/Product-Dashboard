@@ -7,6 +7,7 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/executive", label: "Resumen Ejecutivo" },
   { to: "/stores", label: "Por Website" },
+  { to: "/category-website", label: "Categorías × Website" },
   { to: "/compare", label: "Comparar Reportes" },
   { to: "/trends", label: "Tendencia" },
 ];

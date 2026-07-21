@@ -1,5 +1,6 @@
 import json
 import unicodedata
+from functools import lru_cache
 
 STORE_ALIASES: dict[str, str] = {
     # normalizar variantes de escritura del mismo sitio a un nombre canónico.
@@ -21,7 +22,13 @@ def normalize_store(s) -> str:
     return " ".join(s.strip().upper().split())
 
 
-def stores_of(website: str) -> list[str]:
+# stores_of se llama por cada fila dentro de cada filtro del dashboard. Con
+# 77k productos y varios chips activos son cientos de miles de llamadas por
+# request. El string "Website" se repite muchisimo entre productos, asi que
+# cachearlo en un LRU convierte la mayoria en lookups O(1). Se devuelve tupla
+# para que el resultado sea inmutable y compartible.
+@lru_cache(maxsize=8192)
+def stores_of(website: str) -> tuple[str, ...]:
     raw = str(website or "").split(",")
     out: list[str] = []
     seen: set[str] = set()
@@ -33,7 +40,7 @@ def stores_of(website: str) -> list[str]:
         if canon not in seen:
             seen.add(canon)
             out.append(canon)
-    return out
+    return tuple(out)
 
 
 def has_price(v) -> bool:

@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import { FiltersProvider } from "./context/FiltersContext";
 import { ReportProvider } from "./context/ReportContext";
 import { ToastProvider } from "./context/ToastContext";
+import CategoryWebsite from "./pages/CategoryWebsite";
 import Compare from "./pages/Compare";
 import Dashboard from "./pages/Dashboard";
 import Executive from "./pages/Executive";
@@ -25,6 +26,7 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/executive" element={<Executive />} />
                 <Route path="/stores" element={<Stores />} />
+                <Route path="/category-website" element={<CategoryWebsite />} />
                 <Route path="/products" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/trends" element={<Trends />} />
