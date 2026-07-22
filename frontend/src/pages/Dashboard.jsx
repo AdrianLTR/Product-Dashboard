@@ -284,6 +284,7 @@ export default function Dashboard() {
                 <tr>
                   <th>SKU</th>
                   <th>Nombre</th>
+                  <th>Departamento</th>
                   <th>Familia</th>
                   <th>Categoría</th>
                   <th>Marca</th>
@@ -297,6 +298,7 @@ export default function Dashboard() {
                   <tr key={p.id}>
                     <td>{p.sku}</td>
                     <td title={p.nombre}>{p.nombre || "—"}</td>
+                    <td>{p.departamento || "—"}</td>
                     <td>{p.familia || "—"}</td>
                     <td>{p.categoria_ecommerce || "—"}</td>
                     <td>{p.marca || "—"}</td>
@@ -348,25 +350,66 @@ export default function Dashboard() {
           <Bar label="Sin precio" value={data.precio.sin_precio} max={data.total} color="#e04848" onClick={() => toggleKpiType("no-precio")} />
         </div>
         <div className="cc">
-          <div className="cc-t">Grupos sin Familia</div>
-          {data.grupos_sin_familia.length ? (
-            data.grupos_sin_familia.map((g) => (
-              <Bar key={g.label} label={g.label} value={g.count} max={data.grupos_sin_familia[0].count} color="#f0a030" />
+          <div className="cc-t">Departamentos sin Familia</div>
+          {data.deptos_sin_familia.length ? (
+            data.deptos_sin_familia.map((g) => (
+              <Bar key={g.label} label={g.label} value={g.count} max={data.deptos_sin_familia[0].count} color="#f0a030" />
             ))
           ) : (
             <div className="emp" style={{ padding: "1rem" }}>Todo completo ✓</div>
           )}
         </div>
         <div className="cc">
-          <div className="cc-t">Grupos sin Categoría</div>
-          {data.grupos_sin_categoria.length ? (
-            data.grupos_sin_categoria.map((g) => (
-              <Bar key={g.label} label={g.label} value={g.count} max={data.grupos_sin_categoria[0].count} color="#a78bfa" />
+          <div className="cc-t">Departamentos sin Categoría</div>
+          {data.deptos_sin_categoria.length ? (
+            data.deptos_sin_categoria.map((g) => (
+              <Bar key={g.label} label={g.label} value={g.count} max={data.deptos_sin_categoria[0].count} color="#a78bfa" />
             ))
           ) : (
             <div className="emp" style={{ padding: "1rem" }}>Todo completo ✓</div>
           )}
         </div>
+      </div>
+
+      {/* Desglose por Departamento (derivado del grupo via Hoja Madre) */}
+      <div className="cc">
+        <div className="cc-t">Por Departamento — completitud para entender las categorías</div>
+        {data.departamentos && data.departamentos.length ? (
+          <div className="embedded-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Departamento</th>
+                  <th>Total</th>
+                  <th>% Completo</th>
+                  <th>Sin Familia</th>
+                  <th>Sin Categoría</th>
+                  <th>Sin Foto</th>
+                  <th>Con Precio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.departamentos.map((d) => (
+                  <tr key={d.departamento}>
+                    <td>{d.departamento}</td>
+                    <td>{d.total.toLocaleString()}</td>
+                    <td>
+                      <span className={"bdg " + (d.completos_pct >= 90 ? "ok" : d.completos_pct >= 60 ? "ne" : "ms")}>
+                        {d.completos_pct}%
+                      </span>
+                    </td>
+                    <td>{d.sin_familia > 0 ? <span className="diff-rem">{d.sin_familia.toLocaleString()}</span> : "0"}</td>
+                    <td>{d.sin_categoria > 0 ? <span className="diff-rem">{d.sin_categoria.toLocaleString()}</span> : "0"}</td>
+                    <td>{d.sin_foto.toLocaleString()}</td>
+                    <td className="diff-add">{d.con_precio.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="emp">Sin datos</div>
+        )}
       </div>
       </div>
     </div>

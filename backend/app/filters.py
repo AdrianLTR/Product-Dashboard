@@ -36,9 +36,11 @@ def apply_dashboard_filters(
     nombre: str | None = None,
     familia: str | None = None,
     skus: str | None = None,
+    departamento: str | None = None,
 ) -> list[Product]:
     web_f = csv_list(website)
     cat_f = csv_list(categoria)
+    dep_f = csv_list(departamento)
     estado_f = [e.lower() for e in csv_list(estado)]
     formato_q = (formato or "").strip().lower()
     sku_q = (sku or "").strip().lower()
@@ -68,6 +70,8 @@ def apply_dashboard_filters(
             if not any(w in ws for w in web_f):
                 continue
         if cat_f and (r.categoria_ecommerce or "").strip() not in cat_f:
+            continue
+        if dep_f and r.departamento not in dep_f:
             continue
         if estado_f and (r.estado_sl or "").strip().lower() not in estado_f:
             continue

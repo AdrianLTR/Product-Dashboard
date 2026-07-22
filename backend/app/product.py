@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from .departments import departamento_of
+
 # Columnas conocidas del reporte de Sales Layer, mapeadas a campos propios.
 # Todo lo que no calce aqui se guarda igual en `extra` (dict) sin perderse.
 KNOWN_COLUMNS = {
@@ -37,6 +39,12 @@ class Product:
     grupo_articulo: str = ""
     formato: str = ""
     extra: dict = field(default_factory=dict)
+    # Derivado del grupo via Hoja Madre; no se persiste (siempre se recalcula
+    # al leer, asi un cambio en el mapeo aplica sin re-subir reportes).
+    departamento: str = field(default="", compare=False)
+
+    def __post_init__(self):
+        self.departamento = departamento_of(self.grupo_articulo)
 
     def to_dict(self) -> dict:
         return {

@@ -58,6 +58,7 @@ def dashboard(
     nombre: str | None = Query(None),
     familia: str | None = Query(None),
     skus: str | None = Query(None),
+    departamento: str | None = Query(None),
 ):
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
@@ -74,6 +75,7 @@ def dashboard(
         nombre=nombre,
         familia=familia,
         skus=skus,
+        departamento=departamento,
     )
     total = len(rows)
 
@@ -132,8 +134,33 @@ def dashboard(
     marca_counter = Counter((r.marca or "").strip() or "(sin marca)" for r in rows)
     cat_counter = Counter((r.categoria_ecommerce or "").strip() for r in rows if (r.categoria_ecommerce or "").strip())
 
-    grupos_sin_fam = Counter((r.grupo_articulo or "(sin grupo)") for r in rows if is_empty(r.familia))
-    grupos_sin_cat = Counter((r.grupo_articulo or "(sin grupo)") for r in rows if is_empty(r.categoria_ecommerce))
+    # Agrupacion por Departamento (derivado del grupo via Hoja Madre). Reemplaza
+    # el agrupado por grupo de articulo, para entender las categorias por depto.
+    deps_sin_fam = Counter(r.departamento for r in rows if is_empty(r.familia))
+    deps_sin_cat = Counter(r.departamento for r in rows if is_empty(r.categoria_ecommerce))
+
+    # Desglose completo por departamento
+    dep_stats: dict[str, dict] = {}
+    for r in rows:
+        d = dep_stats.setdefault(
+            r.departamento,
+            {"departamento": r.departamento, "total": 0, "sin_familia": 0, "sin_categoria": 0,
+             "sin_foto": 0, "con_precio": 0, "completos": 0},
+        )
+        d["total"] += 1
+        if is_empty(r.familia):
+            d["sin_familia"] += 1
+        if is_empty(r.categoria_ecommerce):
+            d["sin_categoria"] += 1
+        if is_empty(r.foto_descriptiva_sl):
+            d["sin_foto"] += 1
+        if has_price(r.precio_regular):
+            d["con_precio"] += 1
+        if _is_complete(r):
+            d["completos"] += 1
+    departamentos = sorted(dep_stats.values(), key=lambda x: -x["total"])
+    for d in departamentos:
+        d["completos_pct"] = round(d["completos"] / d["total"] * 100) if d["total"] else 0
 
     return {
         "total": total,
@@ -170,6 +197,7 @@ def dashboard(
             "con_precio_merca": con_precio_merca,
             "sin_precio_merca": sin_precio_merca,
         },
-        "grupos_sin_familia": _top(grupos_sin_fam, 7),
-        "grupos_sin_categoria": _top(grupos_sin_cat, 7),
+        "deptos_sin_familia": _top(deps_sin_fam, 7),
+        "deptos_sin_categoria": _top(deps_sin_cat, 7),
+        "departamentos": departamentos,
     }
