@@ -57,6 +57,7 @@ def dashboard(
     sku: str | None = Query(None),
     nombre: str | None = Query(None),
     familia: str | None = Query(None),
+    skus: str | None = Query(None),
 ):
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
@@ -72,8 +73,33 @@ def dashboard(
         sku=sku,
         nombre=nombre,
         familia=familia,
+        skus=skus,
     )
     total = len(rows)
+
+    # Si se pego un listado de SKUs, reportar cobertura: cuantos del listado
+    # existen en el reporte y cuales no aparecen (para comparar listado vs reporte).
+    sku_list_report = None
+    if skus:
+        from ..filters import parse_sku_list
+
+        requested = parse_sku_list(skus)
+        present = {(r.sku or "").strip().lower() for r in all_rows}
+        seen = set()
+        missing = []
+        for s in requested:
+            key = s.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            if key not in present:
+                missing.append(s)
+        sku_list_report = {
+            "requested": len(seen),
+            "found": len(seen) - len(missing),
+            "missing": missing[:1000],
+            "missing_count": len(missing),
+        }
 
     # Filtros disponibles (chips), calculados sobre el dataset completo del reporte
     store_set: set[str] = set()
@@ -111,6 +137,7 @@ def dashboard(
 
     return {
         "total": total,
+        "sku_list_report": sku_list_report,
         "filters": {
             "stores": sorted(store_set),
             "marcas": marcas_all,

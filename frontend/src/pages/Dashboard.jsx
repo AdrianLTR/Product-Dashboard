@@ -29,10 +29,15 @@ export default function Dashboard() {
   const {
     chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
     nombre, setNombre, marca, setMarca, familia, setFamilia,
-    kpiTypes, toggleKpiType, setKpiTypes, reset, asQuery,
+    kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList, reset, asQuery,
   } = useFilters();
   const [data, setData] = useState(null);
   const [tableData, setTableData] = useState(null);
+
+  // Panel de "cargar listado de SKUs": textarea local que se aplica con boton
+  const [showSkuPanel, setShowSkuPanel] = useState(false);
+  const [skuDraft, setSkuDraft] = useState(skuList);
+  useEffect(() => setSkuDraft(skuList), [skuList]);
 
   // Los inputs se manejan en estado local (draft) y solo se aplican al
   // contexto de filtros con Enter o el boton Aplicar. Evita disparar una
@@ -163,10 +168,53 @@ export default function Dashboard() {
           {hasPendingChanges ? "Aplicar" : "Buscar"}
         </button>
         <button type="button" className="btn" onClick={reset}>Limpiar</button>
-        <span style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--mono)", marginLeft: "auto" }}>
-          Enter para aplicar
-        </span>
+        <button
+          type="button"
+          className={"btn" + (skuList.trim() ? " pri" : "")}
+          onClick={() => setShowSkuPanel((v) => !v)}
+          style={{ marginLeft: "auto" }}
+        >
+          {skuList.trim()
+            ? `Listado activo (${data.sku_list_report?.requested ?? "…"})`
+            : "↥ Cargar listado de SKUs"}
+        </button>
       </form>
+
+      {showSkuPanel && (
+        <div className="cc" style={{ padding: "12px 14px" }}>
+          <div className="sh" style={{ marginBottom: 8 }}>
+            <div className="sh-t">
+              <div className="sh-title" style={{ fontSize: 13 }}>Comparar listado de SKUs contra este reporte</div>
+              <div className="sh-sub">Pega los SKUs (uno por línea, o separados por coma/espacio). El dashboard mostrará solo esos.</div>
+            </div>
+          </div>
+          <textarea
+            value={skuDraft}
+            onChange={(e) => setSkuDraft(e.target.value)}
+            placeholder={"SKU001\nSKU002\nSKU003…"}
+            style={{ width: "100%", minHeight: 90, background: "var(--sur)", border: "1px solid var(--b2)", borderRadius: 6, color: "var(--tx)", fontFamily: "var(--mono)", fontSize: 12, padding: 8, resize: "vertical" }}
+          />
+          <div className="fb" style={{ marginTop: 8 }}>
+            <button className="btn pri" onClick={() => setSkuList(skuDraft)}>Aplicar listado</button>
+            <button className="btn" onClick={() => { setSkuDraft(""); setSkuList(""); }}>Quitar listado</button>
+            {data.sku_list_report && (
+              <span className="sh-sub" style={{ marginLeft: "auto" }}>
+                {data.sku_list_report.requested.toLocaleString()} pegados ·{" "}
+                <span className="diff-add">{data.sku_list_report.found.toLocaleString()} encontrados</span> ·{" "}
+                <span className="diff-rem">{data.sku_list_report.missing_count.toLocaleString()} no están en el reporte</span>
+              </span>
+            )}
+          </div>
+          {data.sku_list_report && data.sku_list_report.missing_count > 0 && (
+            <div className="sh-sub" style={{ marginTop: 8 }}>
+              No encontrados: <span style={{ fontFamily: "var(--mono)", color: "var(--red)" }}>
+                {data.sku_list_report.missing.slice(0, 60).join(", ")}
+                {data.sku_list_report.missing_count > 60 && ` … (+${(data.sku_list_report.missing_count - 60).toLocaleString()})`}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="fb">
         {data.filters.stores.map((s) => (

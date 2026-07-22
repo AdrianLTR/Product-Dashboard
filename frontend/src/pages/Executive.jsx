@@ -1,7 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import DrillModal from "../components/DrillModal";
 import { reportDate as fmtReportDate, reportSortValue } from "../dates";
 import { useReports } from "../context/ReportContext";
+
+// Mapea la etiqueta de un indicador a los filtros de producto que lo definen,
+// para poder abrir el detalle ("ver los Sin Familia de JUMBO").
+const DRILL_PARAMS = {
+  "Total SKU": {},
+  "Visibles": { estado: "Visible" },
+  "Completos": { kpi_types: "completos" },
+  "Con Precio": { kpi_types: "con-precio" },
+  "Sin Foto": { kpi_types: "no-foto" },
+  "Sin Familia": { kpi_types: "no-familia" },
+  "Sin Nombre": { kpi_types: "no-nombre" },
+  "Sin Cat": { kpi_types: "no-cat" },
+};
 
 function scoreColor(score) {
   if (score >= 90) return "var(--teal)";
@@ -30,10 +44,15 @@ function trendArrow(v) {
 }
 
 // Renderiza un "kpi tile" con valor grande y delta abajo si hay reporte previo
-function KpiTile({ label, value, delta, higherIsBetter = true, decimals = 0, format = (v) => v.toLocaleString() }) {
+function KpiTile({ label, value, delta, higherIsBetter = true, decimals = 0, format = (v) => v.toLocaleString(), onClick }) {
   const tc = trendClass(delta, higherIsBetter);
   return (
-    <div className="kpi-tile">
+    <div
+      className={"kpi-tile" + (onClick ? " clickable" : "")}
+      onClick={onClick}
+      style={onClick ? { cursor: "pointer" } : undefined}
+      title={onClick ? "Clic para ver el detalle" : undefined}
+    >
       <div className="kpi-tile-l">{label}</div>
       <div className="kpi-tile-v">{format(value)}</div>
       {delta !== null && delta !== undefined && (
@@ -46,9 +65,22 @@ function KpiTile({ label, value, delta, higherIsBetter = true, decimals = 0, for
   );
 }
 
-function StoreCard({ store, hasPrev }) {
+function StoreCard({ store, hasPrev, onDrill }) {
   const d = store.delta || {};
   const kpiTrend = trendClass(d.kpi_score);
+  // Badge de pendiente clickeable: abre el detalle de ese indicador en esta tienda
+  const pend = (label, count, delta) =>
+    count > 0 ? (
+      <span
+        className="bdg ms"
+        style={{ cursor: "pointer" }}
+        onClick={() => onDrill(label, store.name)}
+        title={`Ver ${label} de ${store.name}`}
+      >
+        {label}: {count.toLocaleString()}{hasPrev && delta !== 0 && ` (${fmtDelta(delta)})`}
+      </span>
+    ) : null;
+
   return (
     <div className="cc">
       <div className="sh" style={{ marginBottom: 12 }}>
@@ -69,24 +101,16 @@ function StoreCard({ store, hasPrev }) {
       </div>
 
       <div className="kpi-row">
-        <KpiTile label="Visibles" value={store.visibles} delta={d.visibles} />
-        <KpiTile label="Completos" value={store.completos} delta={d.completos} />
-        <KpiTile label="Con Precio" value={store.con_precio} delta={d.con_precio} />
+        <KpiTile label="Visibles" value={store.visibles} delta={d.visibles} onClick={() => onDrill("Visibles", store.name)} />
+        <KpiTile label="Completos" value={store.completos} delta={d.completos} onClick={() => onDrill("Completos", store.name)} />
+        <KpiTile label="Con Precio" value={store.con_precio} delta={d.con_precio} onClick={() => onDrill("Con Precio", store.name)} />
       </div>
 
       <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {store.sin_familia > 0 && (
-          <span className="bdg ms">Sin Familia: {store.sin_familia.toLocaleString()}{hasPrev && d.sin_familia !== 0 && ` (${fmtDelta(d.sin_familia)})`}</span>
-        )}
-        {store.sin_foto > 0 && (
-          <span className="bdg ms">Sin Foto: {store.sin_foto.toLocaleString()}{hasPrev && d.sin_foto !== 0 && ` (${fmtDelta(d.sin_foto)})`}</span>
-        )}
-        {store.sin_nombre > 0 && (
-          <span className="bdg ms">Sin Nombre: {store.sin_nombre.toLocaleString()}{hasPrev && d.sin_nombre !== 0 && ` (${fmtDelta(d.sin_nombre)})`}</span>
-        )}
-        {store.sin_categoria > 0 && (
-          <span className="bdg ms">Sin Cat: {store.sin_categoria.toLocaleString()}{hasPrev && d.sin_categoria !== 0 && ` (${fmtDelta(d.sin_categoria)})`}</span>
-        )}
+        {pend("Sin Familia", store.sin_familia, d.sin_familia)}
+        {pend("Sin Foto", store.sin_foto, d.sin_foto)}
+        {pend("Sin Nombre", store.sin_nombre, d.sin_nombre)}
+        {pend("Sin Cat", store.sin_categoria, d.sin_categoria)}
         {store.sin_familia === 0 && store.sin_foto === 0 && store.sin_nombre === 0 && store.sin_categoria === 0 && (
           <span className="bdg ok">Sin pendientes</span>
         )}
@@ -134,6 +158,10 @@ export default function Executive() {
     return data.stores.filter((s) => s.name.toLowerCase().includes(q));
   }, [data, storeFilter]);
 
+  // Detalle (drill-down) de un indicador: {label, website} o null
+  const [drill, setDrill] = useState(null);
+  const openDrill = (label, website) => setDrill({ label, website });
+
   if (!currentReportId) {
     return <div className="emp">Carga o selecciona un reporte primero en "Cargar Reporte".</div>;
   }
@@ -143,13 +171,26 @@ export default function Executive() {
       <div className="exec-head no-print-hide">
         <div className="sh-t">
           <div className="exec-h1">Resumen Ejecutivo</div>
+          {data && (
+            <div className="exec-dates">
+              <span className="exec-date-cur">{fmtReportDate(data.current)}</span>
+              {data.previous ? (
+                <>
+                  <span className="exec-date-vs">vs</span>
+                  <span className="exec-date-prev">{fmtReportDate(data.previous)}</span>
+                </>
+              ) : (
+                <span className="exec-date-vs">sin comparación</span>
+              )}
+            </div>
+          )}
           <div className="exec-meta">
             {data ? (
               <>
-                {data.current.filename} · {fmtReportDate(data.current)}
+                {data.current.filename}
                 {data.previous
-                  ? <> · vs {data.previous.filename} ({fmtReportDate(data.previous)})</>
-                  : <> · sin reporte de comparación — no hay deltas</>}
+                  ? <> · vs {data.previous.filename}</>
+                  : <> · no hay reporte de comparación, no hay deltas</>}
               </>
             ) : (
               "Cargando…"
@@ -196,12 +237,12 @@ export default function Executive() {
           )}
         </div>
         <div className="kpi-row">
-          <KpiTile label="Total SKU" value={g.total} delta={gd.total} />
-          <KpiTile label="Visibles" value={g.visibles} delta={gd.visibles} />
-          <KpiTile label="Completos" value={g.completos} delta={gd.completos} />
-          <KpiTile label="Con Precio" value={g.con_precio} delta={gd.con_precio} />
-          <KpiTile label="Sin Foto" value={g.sin_foto} delta={gd.sin_foto} higherIsBetter={false} />
-          <KpiTile label="Sin Familia" value={g.sin_familia} delta={gd.sin_familia} higherIsBetter={false} />
+          <KpiTile label="Total SKU" value={g.total} delta={gd.total} onClick={() => openDrill("Total SKU", null)} />
+          <KpiTile label="Visibles" value={g.visibles} delta={gd.visibles} onClick={() => openDrill("Visibles", null)} />
+          <KpiTile label="Completos" value={g.completos} delta={gd.completos} onClick={() => openDrill("Completos", null)} />
+          <KpiTile label="Con Precio" value={g.con_precio} delta={gd.con_precio} onClick={() => openDrill("Con Precio", null)} />
+          <KpiTile label="Sin Foto" value={g.sin_foto} delta={gd.sin_foto} higherIsBetter={false} onClick={() => openDrill("Sin Foto", null)} />
+          <KpiTile label="Sin Familia" value={g.sin_familia} delta={gd.sin_familia} higherIsBetter={false} onClick={() => openDrill("Sin Familia", null)} />
         </div>
       </div>
 
@@ -221,13 +262,23 @@ export default function Executive() {
       ) : (
         <div className="ch2">
           {visibleStores.map((s) => (
-            <StoreCard key={s.name} store={s} hasPrev={hasPrev} />
+            <StoreCard key={s.name} store={s} hasPrev={hasPrev} onDrill={openDrill} />
           ))}
         </div>
       )}
       </>
       );
       })()}
+
+      {drill && (
+        <DrillModal
+          reportId={reportId}
+          title={`${drill.label}${drill.website ? " · " + drill.website : " · Todos los websites"}`}
+          subtitle={data ? `${data.current.filename} (${fmtReportDate(data.current)})` : ""}
+          params={{ ...(DRILL_PARAMS[drill.label] || {}), ...(drill.website ? { website: drill.website } : {}) }}
+          onClose={() => setDrill(null)}
+        />
+      )}
     </>
   );
 }

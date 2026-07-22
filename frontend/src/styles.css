@@ -171,7 +171,13 @@ tr:hover td { background:rgba(255,255,255,.02); }
 /* ── Resumen Ejecutivo ── */
 .exec-head { display:flex; align-items:flex-start; gap:1rem; flex-wrap:wrap; border-bottom:1px solid var(--b); padding-bottom:1rem; }
 .exec-h1 { font-size:20px; font-weight:600; }
-.exec-meta { font-size:11px; color:var(--tx3); font-family:var(--mono); margin-top:3px; }
+.exec-meta { font-size:11px; color:var(--tx3); font-family:var(--mono); margin-top:4px; }
+/* Fechas de comparacion grandes y legibles, con el mismo peso que el titulo */
+.exec-dates { display:flex; align-items:baseline; gap:12px; margin-top:8px; font-family:var(--sans); }
+.exec-date-cur { font-size:26px; font-weight:600; color:var(--tx); letter-spacing:-.01em; }
+.exec-date-prev { font-size:26px; font-weight:600; color:var(--tx2); letter-spacing:-.01em; }
+.exec-date-vs { font-size:16px; font-weight:600; color:var(--tx3); text-transform:uppercase; letter-spacing:.05em; }
+.kpi-tile.clickable:hover { border-color:var(--teal); transform:translateY(-1px); transition:transform .12s,border-color .12s; }
 .exec-hero { display:grid; grid-template-columns:auto 1fr; gap:1.75rem; align-items:center; }
 .exec-score { background:var(--s2); border:1px solid var(--b); border-radius:var(--r2); padding:1.4rem 2.1rem; text-align:center; min-width:190px; }
 .exec-score-v { font-size:60px; font-weight:300; line-height:1; letter-spacing:-.02em; }

@@ -1,12 +1,24 @@
+import re
+
 from . import storage
 from .product import Product
 from .utils import COMPLETENESS_FIELDS, has_price, is_complete, is_empty, stores_of
+
+# Separadores admitidos al pegar un listado de SKUs: coma, punto y coma,
+# espacios, tabs y saltos de linea. Asi el usuario puede pegar de Excel.
+_SKU_SPLIT_RE = re.compile(r"[,;\s]+")
 
 
 def csv_list(value: str | None) -> list[str]:
     if not value:
         return []
     return [v.strip() for v in value.split(",") if v.strip()]
+
+
+def parse_sku_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [s.strip() for s in _SKU_SPLIT_RE.split(value) if s.strip()]
 
 
 def get_report_products(report_id: int) -> list[Product]:
@@ -23,6 +35,7 @@ def apply_dashboard_filters(
     sku: str | None = None,
     nombre: str | None = None,
     familia: str | None = None,
+    skus: str | None = None,
 ) -> list[Product]:
     web_f = csv_list(website)
     cat_f = csv_list(categoria)
@@ -33,9 +46,13 @@ def apply_dashboard_filters(
     # marca y familia son busqueda por texto (contiene), no seleccion exacta
     marca_q = (marca or "").strip().lower()
     familia_q = (familia or "").strip().lower()
+    # skus: listado exacto pegado por el usuario (comparar un listado contra el reporte)
+    sku_set = {s.lower() for s in parse_sku_list(skus)}
 
     out = []
     for r in rows:
+        if sku_set and (r.sku or "").strip().lower() not in sku_set:
+            continue
         if formato_q and formato_q not in (r.formato or "").lower():
             continue
         if sku_q and sku_q not in (r.sku or "").lower():

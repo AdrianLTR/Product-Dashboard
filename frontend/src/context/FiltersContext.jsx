@@ -12,6 +12,7 @@ export function FiltersProvider({ children }) {
   const [marca, setMarca] = useState("");
   const [familia, setFamilia] = useState("");
   const [kpiTypes, setKpiTypes] = useState([]); // toggle multi-select desde el Dashboard
+  const [skuList, setSkuList] = useState(""); // listado pegado para comparar contra el reporte
 
   function toggleKpiType(t) {
     setKpiTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -40,6 +41,7 @@ export function FiltersProvider({ children }) {
     setMarca("");
     setFamilia("");
     setKpiTypes([]);
+    setSkuList("");
   }
 
   const asQuery = useMemo(
@@ -51,8 +53,9 @@ export function FiltersProvider({ children }) {
       nombre,
       marca,
       familia,
+      skus: skuList.trim(),
     }),
-    [chips, formato, sku, nombre, marca, familia]
+    [chips, formato, sku, nombre, marca, familia, skuList]
   );
 
   return (
@@ -60,7 +63,7 @@ export function FiltersProvider({ children }) {
       value={{
         chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
         nombre, setNombre, marca, setMarca, familia, setFamilia,
-        kpiTypes, toggleKpiType, setKpiTypes, reset, asQuery,
+        kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList, reset, asQuery,
       }}
     >
       {children}
