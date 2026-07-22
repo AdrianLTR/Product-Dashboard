@@ -3,7 +3,7 @@ from collections import Counter
 from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
-from ..filters import apply_dashboard_filters, get_report_products
+from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products
 from ..product import Product
 from ..utils import has_price, is_empty, stores_of
 
@@ -59,6 +59,8 @@ def dashboard(
     familia: str | None = Query(None),
     skus: str | None = Query(None),
     departamento: str | None = Query(None),
+    kpi_types: str | None = Query(None),
+    search: str | None = Query(None),
 ):
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
@@ -77,6 +79,10 @@ def dashboard(
         skus=skus,
         departamento=departamento,
     )
+    # Aplicar tambien los toggles de KPI (Sin Foto, Sin Familia, etc) y la
+    # busqueda de la tabla, para que el score, tarjetas y charts reflejen la
+    # misma seleccion que la tabla embebida — no solo los filtros base.
+    rows = apply_kpi_type_filter(rows, kpi_types, search)
     total = len(rows)
 
     # Si se pego un listado de SKUs, reportar cobertura: cuantos del listado

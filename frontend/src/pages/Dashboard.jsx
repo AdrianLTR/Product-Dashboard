@@ -65,8 +65,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!currentReportId) return;
-    api.getDashboard(currentReportId, asQuery).then(setData);
-  }, [currentReportId, asQuery]);
+    // Pasar tambien kpi_types para que el KPI score y las tarjetas reflejen
+    // la seleccion de toggles (Sin Foto, etc), igual que la tabla.
+    api.getDashboard(currentReportId, { ...asQuery, kpi_types: kpiTypes.join(",") }).then(setData);
+  }, [currentReportId, asQuery, kpiTypes]);
 
   // La tabla embebida se actualiza cuando cambian los filtros del dashboard,
   // los tipos KPI seleccionados o el reporte activo.
