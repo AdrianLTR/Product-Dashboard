@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
 from ..filters import get_report_products
@@ -47,17 +47,25 @@ def _group_by_store(rows: list[Product]) -> dict[str, list[Product]]:
 
 
 @router.get("/{report_id}/executive")
-def executive(report_id: int):
+def executive(
+    report_id: int,
+    compare_id: int | None = Query(None, description="Reporte contra el que comparar. Si se omite, usa el inmediatamente anterior."),
+):
     """Resumen ejecutivo: metricas globales y por website, cada una con su
-    delta contra el reporte inmediatamente anterior (por fecha de carga).
-    Sirve para 'que paso desde el reporte pasado' — sin abrir Comparar."""
+    delta contra un reporte de comparacion. Por defecto es el inmediatamente
+    anterior (por fecha del reporte), pero se puede elegir otro con compare_id."""
     meta = storage.get_report_meta(report_id)
     if not meta:
         raise HTTPException(404, "Reporte no encontrado")
 
-    all_reports = sorted(storage.list_reports(), key=lambda m: m["uploaded_at"])
-    idx = next((i for i, m in enumerate(all_reports) if m["id"] == report_id), None)
-    prev_meta = all_reports[idx - 1] if idx and idx > 0 else None
+    if compare_id is not None:
+        prev_meta = storage.get_report_meta(compare_id)
+        if not prev_meta:
+            raise HTTPException(404, "Reporte de comparación no encontrado")
+    else:
+        all_reports = sorted(storage.list_reports(), key=storage.report_sort_key)
+        idx = next((i for i, m in enumerate(all_reports) if m["id"] == report_id), None)
+        prev_meta = all_reports[idx - 1] if idx and idx > 0 else None
 
     cur_rows = get_report_products(report_id)
     prev_rows = get_report_products(prev_meta["id"]) if prev_meta else []

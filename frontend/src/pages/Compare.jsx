@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import StatCard from "../components/StatCard";
+import { reportDate, reportSortValue } from "../dates";
 import { useReports } from "../context/ReportContext";
 
 export default function Compare() {
   const { reports, compareBaseId, setCompareBaseId, compareTargetId, setCompareTargetId } = useReports();
   const sorted = useMemo(
-    () => [...reports].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at)),
+    () => [...reports].sort((a, b) => reportSortValue(a).localeCompare(reportSortValue(b))),
     [reports]
   );
   // baseId/targetId viven en ReportContext para que la seleccion persista al
@@ -58,12 +59,12 @@ export default function Compare() {
         <div className="ml fb">
           <select value={baseId ?? ""} onChange={(e) => setBaseId(Number(e.target.value))}>
             {sorted.map((r) => (
-              <option key={r.id} value={r.id}>Base: {r.filename} ({new Date(r.uploaded_at).toLocaleDateString("es-DO")})</option>
+              <option key={r.id} value={r.id}>Base: {r.filename} ({reportDate(r)})</option>
             ))}
           </select>
           <select value={targetId ?? ""} onChange={(e) => setTargetId(Number(e.target.value))}>
             {sorted.map((r) => (
-              <option key={r.id} value={r.id}>Nuevo: {r.filename} ({new Date(r.uploaded_at).toLocaleDateString("es-DO")})</option>
+              <option key={r.id} value={r.id}>Nuevo: {r.filename} ({reportDate(r)})</option>
             ))}
           </select>
           <button className="btn" onClick={swapReports} title="Intercambiar base y nuevo">⇄ Invertir</button>

@@ -97,7 +97,8 @@ export const api = {
   getProducts: (reportId, params) => request(`/reports/${reportId}/products${qs(params)}`),
   compareReports: (baseId, targetId) => request(`/compare${qs({ base_id: baseId, target_id: targetId })}`),
   getTrends: () => request("/trends"),
-  getExecutive: (reportId) => request(`/reports/${reportId}/executive`),
+  getExecutive: (reportId, compareId) =>
+    request(`/reports/${reportId}/executive${qs({ compare_id: compareId })}`),
   getCategoryWebsite: (reportId) => request(`/reports/${reportId}/category-website`),
   // URLs de descarga directa (el navegador baja el xlsx; no pasan por fetch)
   exportProductsUrl: (reportId, params) => `${BASE}/export/products/${reportId}${qs(params)}`,

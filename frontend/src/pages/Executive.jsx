@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import { reportDate as fmtReportDate, reportSortValue } from "../dates";
 import { useReports } from "../context/ReportContext";
 
 function scoreColor(score) {
@@ -95,17 +96,36 @@ function StoreCard({ store, hasPrev }) {
 }
 
 export default function Executive() {
-  const { currentReportId, currentReport } = useReports();
+  const { currentReportId, reports } = useReports();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [storeFilter, setStoreFilter] = useState("");
 
+  // Reportes elegibles, ordenados por fecha del reporte (mas nuevo primero)
+  const sorted = useMemo(
+    () => [...reports].sort((a, b) => reportSortValue(b).localeCompare(reportSortValue(a))),
+    [reports]
+  );
+
+  // Reporte a analizar (default: el activo) y contra cual comparar
+  // ("" = automatico, el inmediatamente anterior por fecha).
+  const [reportId, setReportId] = useState(currentReportId);
+  const [compareId, setCompareId] = useState("");
+
   useEffect(() => {
-    if (!currentReportId) return;
+    // Si cambia el reporte activo global, seguirlo por defecto
+    setReportId(currentReportId);
+  }, [currentReportId]);
+
+  useEffect(() => {
+    if (!reportId) return;
     setError(null);
     setData(null);
-    api.getExecutive(currentReportId).then(setData).catch((err) => setError(err.message));
-  }, [currentReportId]);
+    api
+      .getExecutive(reportId, compareId || undefined)
+      .then(setData)
+      .catch((err) => setError(err.message));
+  }, [reportId, compareId]);
 
   const visibleStores = useMemo(() => {
     if (!data) return [];
@@ -117,12 +137,6 @@ export default function Executive() {
   if (!currentReportId) {
     return <div className="emp">Carga o selecciona un reporte primero en "Cargar Reporte".</div>;
   }
-  if (error) return <div className="emp">{error}</div>;
-  if (!data) return <div className="emp">Cargando…</div>;
-
-  const hasPrev = !!data.previous;
-  const g = data.global;
-  const gd = g.delta || {};
 
   return (
     <>
@@ -130,17 +144,43 @@ export default function Executive() {
         <div className="sh-t">
           <div className="exec-h1">Resumen Ejecutivo</div>
           <div className="exec-meta">
-            {currentReport?.filename} · {new Date(data.current.uploaded_at).toLocaleString("es-DO")}
-            {hasPrev && (
-              <> · vs {data.previous.filename} ({new Date(data.previous.uploaded_at).toLocaleDateString("es-DO")})</>
+            {data ? (
+              <>
+                {data.current.filename} · {fmtReportDate(data.current)}
+                {data.previous
+                  ? <> · vs {data.previous.filename} ({fmtReportDate(data.previous)})</>
+                  : <> · sin reporte de comparación — no hay deltas</>}
+              </>
+            ) : (
+              "Cargando…"
             )}
-            {!hasPrev && <> · sin reporte anterior — no hay deltas</>}
           </div>
         </div>
-        <div className="ml fb no-print">
+        <div className="ml fb no-print" style={{ alignItems: "center" }}>
+          <select value={reportId ?? ""} onChange={(e) => setReportId(Number(e.target.value))} title="Reporte a analizar">
+            {sorted.map((r) => (
+              <option key={r.id} value={r.id}>Reporte: {r.filename} ({fmtReportDate(r)})</option>
+            ))}
+          </select>
+          <select value={compareId} onChange={(e) => setCompareId(e.target.value)} title="Comparar contra">
+            <option value="">vs anterior (auto)</option>
+            {sorted.filter((r) => r.id !== reportId).map((r) => (
+              <option key={r.id} value={r.id}>vs {r.filename} ({fmtReportDate(r)})</option>
+            ))}
+          </select>
           <button className="btn" onClick={() => window.print()}>🖨 Imprimir / PDF</button>
         </div>
       </div>
+
+      {error && <div className="emp">{error}</div>}
+      {!data && !error && <div className="emp">Cargando…</div>}
+      {data && (() => {
+      const hasPrev = !!data.previous;
+      const g = data.global;
+      const gd = g.delta || {};
+      return (
+      <>
+
 
       {/* Hero global */}
       <div className="exec-hero">
@@ -185,6 +225,9 @@ export default function Executive() {
           ))}
         </div>
       )}
+      </>
+      );
+      })()}
     </>
   );
 }

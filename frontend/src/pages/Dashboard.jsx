@@ -125,7 +125,8 @@ export default function Dashboard() {
           <div className="dash-rail-title">Focos de atención</div>
           {focos.length === 0 ? (
             <div className="foco ok">
-              Sin pendientes<span className="foco-n">✓</span>
+              <span className="foco-label">Sin pendientes</span>
+              <span className="foco-n">✓</span>
             </div>
           ) : (
             focos.map((f) => (
@@ -136,7 +137,7 @@ export default function Dashboard() {
                 style={{ cursor: "pointer", opacity: f.active ? 1 : undefined }}
                 title="Clic para filtrar la tabla"
               >
-                {f.label}
+                <span className="foco-label">{f.label}</span>
                 <span className="foco-n">{f.count.toLocaleString()} · {f.pct}%</span>
               </div>
             ))

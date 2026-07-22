@@ -9,6 +9,7 @@ class ReportOut(BaseModel):
     id: int
     filename: str
     uploaded_at: datetime.datetime
+    report_date: str | None = None  # fecha del archivo (YYYY-MM-DD) si se pudo deducir
     row_count: int
 
 

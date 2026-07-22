@@ -12,7 +12,7 @@ def trends():
     """Serie historica: una entrada por reporte cargado, en orden cronologico.
     Permite graficar la evolucion del KPI score y de los totales."""
     out = []
-    for meta in sorted(storage.list_reports(), key=lambda m: m["uploaded_at"]):
+    for meta in sorted(storage.list_reports(), key=storage.report_sort_key):
         rows = get_report_products(meta["id"])
         total = len(rows)
         visibles = sum(1 for r in rows if (r.estado_sl or "").strip().lower() == "visible")

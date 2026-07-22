@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { api } from "../api";
+import { reportDate } from "../dates";
 import { useReports } from "../context/ReportContext";
 import { useToast } from "../context/ToastContext";
 
@@ -90,7 +91,8 @@ export default function Upload() {
               <thead>
                 <tr>
                   <th>Archivo</th>
-                  <th>Fecha de carga</th>
+                  <th>Fecha del reporte</th>
+                  <th>Cargado</th>
                   <th>Productos</th>
                   <th></th>
                 </tr>
@@ -99,6 +101,7 @@ export default function Upload() {
                 {reports.map((r) => (
                   <tr key={r.id}>
                     <td>{r.filename}</td>
+                    <td>{reportDate(r)}</td>
                     <td>{new Date(r.uploaded_at).toLocaleString("es-DO")}</td>
                     <td>{r.row_count.toLocaleString()}</td>
                     <td className="fb">

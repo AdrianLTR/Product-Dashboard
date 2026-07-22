@@ -1,10 +1,47 @@
 import datetime
 import json
 import os
+import re
 from pathlib import Path
 from threading import Lock
 
 from .product import Product
+
+# Extrae una fecha del nombre del archivo. Los reportes de Sales Layer llegan
+# como "Products_20260722.xlsx"; esa fecha (2026-07-22) es la que interesa para
+# ordenar y comparar, no la fecha de subida al sistema. Busca 8 digitos
+# seguidos (YYYYMMDD) o con separadores (YYYY-MM-DD, YYYY_MM_DD).
+_DATE_RE = re.compile(r"(20\d{2})[-_]?(\d{2})[-_]?(\d{2})")
+
+
+def parse_report_date(filename: str) -> str | None:
+    """Devuelve la fecha ISO (YYYY-MM-DD) hallada en el nombre, o None."""
+    m = _DATE_RE.search(filename or "")
+    if not m:
+        return None
+    year, month, day = m.group(1), m.group(2), m.group(3)
+    try:
+        datetime.date(int(year), int(month), int(day))  # valida rango
+    except ValueError:
+        return None
+    return f"{year}-{month}-{day}"
+
+
+def _enrich_meta(meta: dict) -> dict:
+    """Garantiza que la meta tenga 'report_date' (fecha del archivo si se puede
+    deducir, si no la fecha de subida). Retrocompatible con reportes viejos
+    guardados sin este campo."""
+    if "report_date" not in meta:
+        meta["report_date"] = parse_report_date(meta.get("filename", "")) or (
+            meta.get("uploaded_at", "")[:10] or None
+        )
+    return meta
+
+
+def report_sort_key(meta: dict) -> str:
+    """Clave de orden cronologico: por fecha del archivo si existe, con la
+    fecha de subida como desempate estable."""
+    return (meta.get("report_date") or meta.get("uploaded_at", "")) + "|" + meta.get("uploaded_at", "")
 
 # Sin motor de base de datos: cada reporte es un archivo JSON plano en disco.
 # Fuera de OneDrive por la misma razon que se evitaba con SQLite (escritura
@@ -40,10 +77,12 @@ def _next_id() -> int:
 
 def save_report(filename: str, products: list[Product]) -> dict:
     report_id = _next_id()
+    now = datetime.datetime.utcnow().isoformat()
     meta = {
         "id": report_id,
         "filename": filename,
-        "uploaded_at": datetime.datetime.utcnow().isoformat(),
+        "uploaded_at": now,
+        "report_date": parse_report_date(filename) or now[:10],
         "row_count": len(products),
     }
     payload = {"meta": meta, "products": [p.to_dict() for p in products]}
@@ -59,8 +98,9 @@ def list_reports() -> list[dict]:
             data = json.loads(f.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
-        metas.append(data["meta"])
-    metas.sort(key=lambda m: m["uploaded_at"], reverse=True)
+        metas.append(_enrich_meta(data["meta"]))
+    # Orden cronologico descendente por fecha del reporte (la del archivo)
+    metas.sort(key=report_sort_key, reverse=True)
     return metas
 
 
@@ -69,7 +109,7 @@ def get_report_meta(report_id: int) -> dict | None:
     if not p.exists():
         return None
     data = json.loads(p.read_text(encoding="utf-8"))
-    return data["meta"]
+    return _enrich_meta(data["meta"])
 
 
 def get_report_products(report_id: int) -> list[Product]:

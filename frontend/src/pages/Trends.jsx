@@ -2,10 +2,16 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import LineChart from "../components/LineChart";
 import StatCard from "../components/StatCard";
+import { reportDate } from "../dates";
 
-function fmtDate(iso) {
-  const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+// Etiqueta corta dd/mm para el eje de las graficas, desde la fecha del reporte
+function shortLabel(r) {
+  if (r?.report_date) {
+    const [, m, d] = r.report_date.split("-");
+    return `${d}/${m}`;
+  }
+  const dt = new Date(r.uploaded_at);
+  return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default function Trends() {
@@ -22,7 +28,7 @@ export default function Trends() {
     return <div className="emp">Aún no hay reportes cargados. Ve a "Cargar Reporte".</div>;
   }
 
-  const labels = reports.map((r) => fmtDate(r.uploaded_at));
+  const labels = reports.map((r) => shortLabel(r));
   const last = reports[reports.length - 1];
   const prev = reports.length > 1 ? reports[reports.length - 2] : null;
   const delta = (a, b) => (prev ? a - b : null);
@@ -114,7 +120,7 @@ export default function Trends() {
                 const dv = older ? r.visibles - older.visibles : null;
                 return (
                   <tr key={r.id}>
-                    <td>{new Date(r.uploaded_at).toLocaleString("es-DO")}</td>
+                    <td>{reportDate(r)}</td>
                     <td>{r.filename}</td>
                     <td>{r.total.toLocaleString()}</td>
                     <td>

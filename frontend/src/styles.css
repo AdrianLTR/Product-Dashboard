@@ -183,12 +183,13 @@ tr:hover td { background:rgba(255,255,255,.02); }
 .kpi-tile-l { font-size:9px; font-family:var(--mono); color:var(--tx3); text-transform:uppercase; letter-spacing:.04em; }
 .kpi-tile-v { font-size:25px; font-weight:500; margin-top:4px; line-height:1; }
 .kpi-tile-t { font-size:10px; font-family:var(--mono); margin-top:5px; }
-.foco { display:flex; align-items:center; gap:10px; padding:9px 12px; background:var(--s2); border:1px solid var(--b); border-left:3px solid var(--amb); border-radius:var(--r); margin-bottom:7px; font-size:12px; }
+.foco { display:flex; align-items:center; gap:8px; padding:9px 11px; background:var(--s2); border:1px solid var(--b); border-left:3px solid var(--amb); border-radius:var(--r); margin-bottom:7px; font-size:12px; overflow:hidden; }
 .foco.crit { border-left-color:var(--red); }
 .foco.ok { border-left-color:var(--teal); }
 .foco.active { background:var(--tD); border-color:rgba(24,200,150,.4); }
 .foco:hover { border-color:var(--b2); }
-.foco-n { font-family:var(--mono); font-weight:600; margin-left:auto; white-space:nowrap; }
+.foco-label { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.foco-n { flex:0 0 auto; font-family:var(--mono); font-weight:600; white-space:nowrap; font-size:11px; }
 
 /* ── Modal (Grupos de Artículo) ── */
 .modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:500; display:none; align-items:flex-start; justify-content:center; padding:3rem 1rem; overflow-y:auto; }
