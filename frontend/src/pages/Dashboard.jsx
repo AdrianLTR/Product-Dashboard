@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import Bar from "../components/Bar";
+import FotoCell from "../components/FotoCell";
 import StatCard from "../components/StatCard";
 import { useFilters } from "../context/FiltersContext";
 import { useReports } from "../context/ReportContext";
@@ -292,6 +293,7 @@ export default function Dashboard() {
                   <th>Marca</th>
                   <th>Estado SL</th>
                   <th>Precio Regular</th>
+                  <th>Foto</th>
                   <th>Website</th>
                 </tr>
               </thead>
@@ -306,6 +308,7 @@ export default function Dashboard() {
                     <td>{p.marca || "—"}</td>
                     <td>{p.estado_sl || "—"}</td>
                     <td>{p.precio_regular ? p.precio_regular.toLocaleString() : "—"}</td>
+                    <td><FotoCell value={p.foto_descriptiva_sl} /></td>
                     <td title={p.website}>{p.website || "—"}</td>
                   </tr>
                 ))}

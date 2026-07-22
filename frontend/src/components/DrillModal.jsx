@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import FotoCell from "./FotoCell";
 
 const PAGE = 500;
 
@@ -64,6 +65,7 @@ export default function DrillModal({ reportId, title, subtitle, params, onClose 
                   <th>Marca</th>
                   <th>Estado SL</th>
                   <th>Precio</th>
+                  <th>Foto</th>
                   <th>Website</th>
                 </tr>
               </thead>
@@ -78,6 +80,7 @@ export default function DrillModal({ reportId, title, subtitle, params, onClose 
                     <td>{p.marca || "—"}</td>
                     <td>{p.estado_sl || "—"}</td>
                     <td>{p.precio_regular ? p.precio_regular.toLocaleString() : "—"}</td>
+                    <td><FotoCell value={p.foto_descriptiva_sl} /></td>
                     <td title={p.website}>{p.website || "—"}</td>
                   </tr>
                 ))}
