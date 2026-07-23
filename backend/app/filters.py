@@ -2,7 +2,7 @@ import re
 
 from . import storage
 from .product import Product
-from .utils import COMPLETENESS_FIELDS, has_price, is_complete, is_empty, stores_of
+from .utils import COMPLETENESS_FIELDS, has_price, is_complete, is_empty, is_priority, stores_of
 
 # Separadores admitidos al pegar un listado de SKUs: coma, punto y coma,
 # espacios, tabs y saltos de linea. Asi el usuario puede pegar de Excel.
@@ -84,6 +84,7 @@ def apply_dashboard_filters(
 # productos que estan en ambas listas — util para priorizar los peores casos.
 _KPI_PREDICATES = {
     "completos": lambda r: is_complete(r),
+    "prioridad": lambda r: is_priority(r),
     "no-nombre": lambda r: is_empty(r.nombre),
     "no-familia": lambda r: is_empty(r.familia),
     "no-cat": lambda r: is_empty(r.categoria_ecommerce),

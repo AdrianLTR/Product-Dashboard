@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query
 from .. import storage
 from ..filters import get_report_products
 from ..product import Product
-from ..utils import has_price, is_complete, is_empty, kpi_score, stores_of
+from ..utils import has_price, is_complete, is_empty, is_priority, kpi_score, stores_of
 
 router = APIRouter(prefix="/api/reports", tags=["executive"])
 
@@ -19,6 +19,8 @@ def _metrics(rows: list[Product]) -> dict:
         "kpi_score": kpi_score(rows),
         "visibles": sum(1 for r in rows if _visible(r)),
         "completos": sum(1 for r in rows if is_complete(r)),
+        # Prioridad: con foto pero ficha incompleta — lo mas rapido de cerrar
+        "prioridad": sum(1 for r in rows if is_priority(r)),
         "con_precio": sum(1 for r in rows if has_price(r.precio_regular)),
         "sin_foto": sum(1 for r in rows if is_empty(r.foto_descriptiva_sl)),
         "sin_familia": sum(1 for r in rows if is_empty(r.familia)),

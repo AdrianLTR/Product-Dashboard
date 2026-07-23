@@ -247,6 +247,15 @@ export default function Dashboard() {
           title="Clic para limpiar filtros KPI (mostrar todos)"
         />
         <StatCard label="Completos" colorClass="ct" value={data.cards.completos.toLocaleString()} onClick={() => toggleKpiType("completos")} active={isTypeActive("completos")} />
+        <StatCard
+          label="⚡ Prioridad"
+          colorClass="cp"
+          value={(data.cards.prioridad ?? 0).toLocaleString()}
+          sub="con foto, sin terminar"
+          onClick={() => toggleKpiType("prioridad")}
+          active={isTypeActive("prioridad")}
+          title="Ya tienen foto pero la ficha está incompleta — lo más rápido de cerrar"
+        />
         <StatCard label="Sin Familia" colorClass="ca" value={data.cards.sin_familia.toLocaleString()} onClick={() => toggleKpiType("no-familia")} active={isTypeActive("no-familia")} />
         <StatCard label="Sin Cat." colorClass="ca" value={data.cards.sin_categoria.toLocaleString()} onClick={() => toggleKpiType("no-cat")} active={isTypeActive("no-cat")} />
         <StatCard label="Sin Nombre" colorClass="cr" value={data.cards.sin_nombre.toLocaleString()} onClick={() => toggleKpiType("no-nombre")} active={isTypeActive("no-nombre")} />
@@ -379,6 +388,28 @@ export default function Dashboard() {
             ))
           ) : (
             <div className="emp">Sin etiquetas en este reporte</div>
+          )}
+        </div>
+
+        <div className="cc">
+          <div className="cc-t">⚡ Prioridad por departamento — con foto, sin terminar</div>
+          {data.departamentos && data.departamentos.some((d) => d.prioridad > 0) ? (
+            [...data.departamentos]
+              .filter((d) => d.prioridad > 0)
+              .sort((a, b) => b.prioridad - a.prioridad)
+              .slice(0, 12)
+              .map((d, i, arr) => (
+                <Bar
+                  key={d.departamento}
+                  label={d.departamento}
+                  value={d.prioridad}
+                  max={arr[0].prioridad}
+                  color="#a78bfa"
+                  right={`${d.prioridad.toLocaleString()} de ${d.total.toLocaleString()}`}
+                />
+              ))
+          ) : (
+            <div className="emp" style={{ padding: "1rem" }}>Sin prioridades pendientes ✓</div>
           )}
         </div>
 

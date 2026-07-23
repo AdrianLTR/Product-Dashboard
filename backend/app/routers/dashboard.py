@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from .. import storage
 from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products
 from ..product import Product
-from ..utils import has_price, is_empty, stores_of
+from ..utils import has_price, is_empty, is_priority, stores_of
 
 router = APIRouter(prefix="/api/reports/{report_id}/dashboard", tags=["dashboard"])
 
@@ -136,6 +136,8 @@ def dashboard(
     no_nm = sum(1 for r in rows if is_empty(r.nombre))
     no_foto = sum(1 for r in rows if is_empty(r.foto_descriptiva_sl))
     comp = sum(1 for r in rows if _is_complete(r))
+    # Prioridad: ya tienen foto pero la ficha no esta completa
+    prioridad = sum(1 for r in rows if is_priority(r))
     con_precio = sum(1 for r in rows if has_price(r.precio_regular))
     sin_precio = total - con_precio
     con_precio_merca = sum(1 for r in rows if has_price(r.precio_merca))
@@ -165,9 +167,11 @@ def dashboard(
         d = dep_stats.setdefault(
             r.departamento,
             {"departamento": r.departamento, "total": 0, "sin_familia": 0, "sin_categoria": 0,
-             "sin_foto": 0, "con_precio": 0, "completos": 0},
+             "sin_foto": 0, "con_precio": 0, "completos": 0, "prioridad": 0},
         )
         d["total"] += 1
+        if is_priority(r):
+            d["prioridad"] += 1
         if is_empty(r.familia):
             d["sin_familia"] += 1
         if is_empty(r.categoria_ecommerce):
@@ -207,6 +211,7 @@ def dashboard(
             "sin_foto": no_foto,
             "con_precio": con_precio,
             "sin_precio": sin_precio,
+            "prioridad": prioridad,
         },
         "estado_pie": [{"label": k or "(vacío)", "count": v} for k, v in estado_counts.most_common()],
         "top_marcas": _top(marca_counter, 10),

@@ -10,6 +10,7 @@ const DRILL_PARAMS = {
   "Total SKU": {},
   "Visibles": { estado: "Visible" },
   "Completos": { kpi_types: "completos" },
+  "⚡ Prioridad": { kpi_types: "prioridad" },
   "Con Precio": { kpi_types: "con-precio" },
   "Sin Foto": { kpi_types: "no-foto" },
   "Sin Familia": { kpi_types: "no-familia" },
@@ -104,6 +105,13 @@ function StoreCard({ store, hasPrev, onDrill }) {
         <KpiTile label="Visibles" value={store.visibles} delta={d.visibles} onClick={() => onDrill("Visibles", store.name)} />
         <KpiTile label="Completos" value={store.completos} delta={d.completos} onClick={() => onDrill("Completos", store.name)} />
         <KpiTile label="Con Precio" value={store.con_precio} delta={d.con_precio} onClick={() => onDrill("Con Precio", store.name)} />
+        <KpiTile
+          label="⚡ Prioridad"
+          value={store.prioridad ?? 0}
+          delta={d.prioridad}
+          higherIsBetter={false}
+          onClick={() => onDrill("⚡ Prioridad", store.name)}
+        />
       </div>
 
       <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -240,6 +248,13 @@ export default function Executive() {
           <KpiTile label="Total SKU" value={g.total} delta={gd.total} onClick={() => openDrill("Total SKU", null)} />
           <KpiTile label="Visibles" value={g.visibles} delta={gd.visibles} onClick={() => openDrill("Visibles", null)} />
           <KpiTile label="Completos" value={g.completos} delta={gd.completos} onClick={() => openDrill("Completos", null)} />
+          <KpiTile
+            label="⚡ Prioridad"
+            value={g.prioridad ?? 0}
+            delta={gd.prioridad}
+            higherIsBetter={false}
+            onClick={() => openDrill("⚡ Prioridad", null)}
+          />
           <KpiTile label="Con Precio" value={g.con_precio} delta={gd.con_precio} onClick={() => openDrill("Con Precio", null)} />
           <KpiTile label="Sin Foto" value={g.sin_foto} delta={gd.sin_foto} higherIsBetter={false} onClick={() => openDrill("Sin Foto", null)} />
           <KpiTile label="Sin Familia" value={g.sin_familia} delta={gd.sin_familia} higherIsBetter={false} onClick={() => openDrill("Sin Familia", null)} />

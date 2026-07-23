@@ -100,6 +100,13 @@ def is_complete(row) -> bool:
     return all(not is_empty(getattr(row, f)) for f in COMPLETENESS_FIELDS)
 
 
+def is_priority(row) -> bool:
+    """Prioridad maxima de trabajo: ya tiene foto (el insumo mas caro de
+    conseguir) pero la ficha aun no esta completa. Cerrarlos es rapido porque
+    solo falta contenido, no fotografia."""
+    return not is_empty(row.foto_descriptiva_sl) and not is_complete(row)
+
+
 def load_extra(extra: str) -> dict:
     try:
         return json.loads(extra) if extra else {}
