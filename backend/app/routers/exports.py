@@ -70,6 +70,7 @@ def export_products(
     familia: str | None = Query(None),
     skus: str | None = Query(None),
     departamento: str | None = Query(None),
+    etiqueta: str | None = Query(None),
 ):
     """Exporta la vista de productos filtrada (misma logica del Dashboard) a xlsx."""
     if not storage.get_report_meta(report_id):
@@ -78,6 +79,7 @@ def export_products(
     rows = apply_dashboard_filters(
         rows, website=website, marca=marca, categoria=categoria, estado=estado,
         formato=formato, familia=familia, skus=skus, departamento=departamento,
+        etiqueta=etiqueta,
     )
     rows = apply_kpi_type_filter(rows, kpi_types or kpi_type, search)
     view = (kpi_types or kpi_type or "todos").replace(",", "_")

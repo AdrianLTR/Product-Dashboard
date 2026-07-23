@@ -30,7 +30,8 @@ export default function Dashboard() {
   const {
     chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
     nombre, setNombre, marca, setMarca, familia, setFamilia,
-    kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList, reset, asQuery,
+    kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList,
+    etiquetas, toggleEtiqueta, setEtiquetas, reset, asQuery,
   } = useFilters();
   const [data, setData] = useState(null);
   const [tableData, setTableData] = useState(null);
@@ -167,6 +168,16 @@ export default function Dashboard() {
         <input type="text" placeholder="Buscar marca…" value={draft.marca} onChange={(e) => setDraft({ ...draft, marca: e.target.value })} />
         <input type="text" placeholder="Buscar familia…" value={draft.familia} onChange={(e) => setDraft({ ...draft, familia: e.target.value })} />
         <input type="text" placeholder="Buscar formato…" value={draft.formato} onChange={(e) => setDraft({ ...draft, formato: e.target.value })} />
+        <select
+          value=""
+          onChange={(e) => { if (e.target.value) toggleEtiqueta(e.target.value); }}
+          title="Filtrar por Etiqueta SL"
+        >
+          <option value="">Etiqueta SL…</option>
+          {(data.filters.etiquetas || []).map((t) => (
+            <option key={t} value={t}>{etiquetas.includes(t) ? "✓ " : ""}{t}</option>
+          ))}
+        </select>
         <button type="submit" className={"btn " + (hasPendingChanges ? "pri" : "")}>
           {hasPendingChanges ? "Aplicar" : "Buscar"}
         </button>
@@ -237,6 +248,19 @@ export default function Dashboard() {
           </span>
         ))}
       </div>
+
+      {/* Etiquetas SL activas: se agregan desde el dropdown o el grafico */}
+      {etiquetas.length > 0 && (
+        <div className="fb">
+          <span className="sh-sub">Etiquetas:</span>
+          {etiquetas.map((t) => (
+            <span key={t} className="chip on" onClick={() => toggleEtiqueta(t)} title="Clic para quitar">
+              {t} ×
+            </span>
+          ))}
+          <button className="btn" onClick={() => setEtiquetas([])}>Quitar etiquetas</button>
+        </div>
+      )}
 
       <div className="cgrid">
         <StatCard
@@ -368,22 +392,29 @@ export default function Dashboard() {
 
         <div className="cc">
           <div className="cc-t">
-            Etiquetas SL
+            Etiquetas SL {etiquetas.length > 0 && <span style={{ color: "var(--teal)" }}>· filtrado</span>}
             {data.sin_etiquetas > 0 && (
               <span style={{ float: "right", color: "var(--red)", textTransform: "none", letterSpacing: 0 }}>
                 {data.sin_etiquetas.toLocaleString()} sin etiqueta
               </span>
             )}
           </div>
+          {etiquetas.length > 0 && (
+            <div className="sh-sub" style={{ marginBottom: 8 }}>
+              Mostrando las etiquetas que conviven con el filtro activo. Usa el dropdown de arriba para ver la lista completa.
+            </div>
+          )}
           {data.top_etiquetas && data.top_etiquetas.length ? (
             data.top_etiquetas.map((t) => (
               <Bar
                 key={t.label}
-                label={t.label}
+                label={etiquetas.includes(t.label) ? `✓ ${t.label}` : t.label}
                 value={t.count}
                 max={data.top_etiquetas[0].count}
-                color="#14b8a6"
+                color={etiquetas.includes(t.label) ? "#18c896" : "#14b8a6"}
                 right={`${t.count.toLocaleString()} · ${data.total ? Math.round((t.count / data.total) * 100) : 0}%`}
+                onClick={() => toggleEtiqueta(t.label)}
+                title={`Clic para ${etiquetas.includes(t.label) ? "quitar" : "aplicar"} el filtro "${t.label}"`}
               />
             ))
           ) : (

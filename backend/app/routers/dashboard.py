@@ -1,4 +1,3 @@
-import re
 from collections import Counter
 
 from fastapi import APIRouter, HTTPException, Query
@@ -6,12 +5,9 @@ from fastapi import APIRouter, HTTPException, Query
 from .. import storage
 from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products
 from ..product import Product
-from ..utils import has_price, is_empty, is_priority, stores_of
+from ..utils import etiquetas_of, has_price, is_empty, is_priority, stores_of
 
 router = APIRouter(prefix="/api/reports/{report_id}/dashboard", tags=["dashboard"])
-
-# Separadores posibles entre varias etiquetas en el campo Etiquetas SL
-_ETIQUETA_SPLIT_RE = re.compile(r"[,;|]+")
 
 # Campos que definen un producto "completo" (equivalente a KF en el HTML original)
 COMPLETENESS_FIELDS = [
@@ -63,6 +59,7 @@ def dashboard(
     familia: str | None = Query(None),
     skus: str | None = Query(None),
     departamento: str | None = Query(None),
+    etiqueta: str | None = Query(None),
     kpi_types: str | None = Query(None),
     search: str | None = Query(None),
 ):
@@ -82,6 +79,7 @@ def dashboard(
         familia=familia,
         skus=skus,
         departamento=departamento,
+        etiqueta=etiqueta,
     )
     # Aplicar tambien los toggles de KPI (Sin Foto, Sin Familia, etc) y la
     # busqueda de la tabla, para que el score, tarjetas y charts reflejen la
@@ -120,6 +118,9 @@ def dashboard(
     marcas_all = sorted({(r.marca or "").strip() for r in all_rows if (r.marca or "").strip()})
     cats_all = sorted({(r.categoria_ecommerce or "").strip() for r in all_rows if (r.categoria_ecommerce or "").strip()})
     estados_all = sorted({(r.estado_sl or "").strip() for r in all_rows if (r.estado_sl or "").strip()})
+    etiquetas_all: set[str] = set()
+    for r in all_rows:
+        etiquetas_all.update(etiquetas_of(r.etiquetas_sl))
 
     estado_counts = Counter((r.estado_sl or "").strip().lower() for r in rows)
 
@@ -150,11 +151,11 @@ def dashboard(
     etiqueta_counter: Counter = Counter()
     sin_etiquetas = 0
     for r in rows:
-        tags = [t.strip() for t in _ETIQUETA_SPLIT_RE.split(r.etiquetas_sl or "") if t.strip()]
+        tags = etiquetas_of(r.etiquetas_sl)
         if not tags:
             sin_etiquetas += 1
             continue
-        etiqueta_counter.update(set(tags))  # set: no contar dos veces la misma en un producto
+        etiqueta_counter.update(tags)  # etiquetas_of ya deduplica por producto
 
     # Agrupacion por Departamento (derivado del grupo via Hoja Madre). Reemplaza
     # el agrupado por grupo de articulo, para entender las categorias por depto.
@@ -194,6 +195,7 @@ def dashboard(
             "marcas": marcas_all,
             "categorias": cats_all,
             "estados": estados_all,
+            "etiquetas": sorted(etiquetas_all),
         },
         "estado_counts": {
             "draft": estado_counts.get("draft", 0),

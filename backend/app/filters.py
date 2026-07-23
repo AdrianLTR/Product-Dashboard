@@ -2,7 +2,15 @@ import re
 
 from . import storage
 from .product import Product
-from .utils import COMPLETENESS_FIELDS, has_price, is_complete, is_empty, is_priority, stores_of
+from .utils import (
+    COMPLETENESS_FIELDS,
+    etiquetas_of,
+    has_price,
+    is_complete,
+    is_empty,
+    is_priority,
+    stores_of,
+)
 
 # Separadores admitidos al pegar un listado de SKUs: coma, punto y coma,
 # espacios, tabs y saltos de linea. Asi el usuario puede pegar de Excel.
@@ -37,10 +45,13 @@ def apply_dashboard_filters(
     familia: str | None = None,
     skus: str | None = None,
     departamento: str | None = None,
+    etiqueta: str | None = None,
 ) -> list[Product]:
     web_f = csv_list(website)
     cat_f = csv_list(categoria)
     dep_f = csv_list(departamento)
+    # Varias etiquetas seleccionadas = OR (productos con cualquiera de ellas)
+    etq_f = csv_list(etiqueta)
     estado_f = [e.lower() for e in csv_list(estado)]
     formato_q = (formato or "").strip().lower()
     sku_q = (sku or "").strip().lower()
@@ -73,6 +84,10 @@ def apply_dashboard_filters(
             continue
         if dep_f and r.departamento not in dep_f:
             continue
+        if etq_f:
+            tags = etiquetas_of(r.etiquetas_sl)
+            if not any(e in tags for e in etq_f):
+                continue
         if estado_f and (r.estado_sl or "").strip().lower() not in estado_f:
             continue
         out.append(r)

@@ -1,4 +1,5 @@
 import json
+import re
 import unicodedata
 from functools import lru_cache
 
@@ -40,6 +41,24 @@ def stores_of(website: str) -> tuple[str, ...]:
         if canon not in seen:
             seen.add(canon)
             out.append(canon)
+    return tuple(out)
+
+
+# Separadores posibles entre varias etiquetas en el campo Etiquetas SL.
+# Se cachea igual que stores_of: el mismo string se repite mucho entre productos.
+_ETIQUETA_SPLIT_RE = re.compile(r"[,;|]+")
+
+
+@lru_cache(maxsize=8192)
+def etiquetas_of(value: str) -> tuple[str, ...]:
+    """Etiquetas de un producto, ya separadas y sin duplicados."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for piece in _ETIQUETA_SPLIT_RE.split(str(value or "")):
+        t = piece.strip()
+        if t and t not in seen:
+            seen.add(t)
+            out.append(t)
     return tuple(out)
 
 

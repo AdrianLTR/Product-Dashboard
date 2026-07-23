@@ -13,6 +13,11 @@ export function FiltersProvider({ children }) {
   const [familia, setFamilia] = useState("");
   const [kpiTypes, setKpiTypes] = useState([]); // toggle multi-select desde el Dashboard
   const [skuList, setSkuList] = useState(""); // listado pegado para comparar contra el reporte
+  const [etiquetas, setEtiquetas] = useState([]); // Etiquetas SL seleccionadas (OR entre ellas)
+
+  function toggleEtiqueta(t) {
+    setEtiquetas((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
 
   function toggleKpiType(t) {
     setKpiTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -42,6 +47,7 @@ export function FiltersProvider({ children }) {
     setFamilia("");
     setKpiTypes([]);
     setSkuList("");
+    setEtiquetas([]);
   }
 
   const asQuery = useMemo(
@@ -54,8 +60,9 @@ export function FiltersProvider({ children }) {
       marca,
       familia,
       skus: skuList.trim(),
+      etiqueta: etiquetas.join(","),
     }),
-    [chips, formato, sku, nombre, marca, familia, skuList]
+    [chips, formato, sku, nombre, marca, familia, skuList, etiquetas]
   );
 
   return (
@@ -63,7 +70,8 @@ export function FiltersProvider({ children }) {
       value={{
         chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
         nombre, setNombre, marca, setMarca, familia, setFamilia,
-        kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList, reset, asQuery,
+        kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList,
+        etiquetas, toggleEtiqueta, setEtiquetas, reset, asQuery,
       }}
     >
       {children}
