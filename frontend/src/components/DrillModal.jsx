@@ -64,6 +64,7 @@ export default function DrillModal({ reportId, title, subtitle, params, onClose 
                   <th>Categoría</th>
                   <th>Marca</th>
                   <th>Estado SL</th>
+                  <th>Etiquetas SL</th>
                   <th>Precio</th>
                   <th>Foto</th>
                   <th>Website</th>
@@ -79,6 +80,7 @@ export default function DrillModal({ reportId, title, subtitle, params, onClose 
                     <td>{p.categoria_ecommerce || "—"}</td>
                     <td>{p.marca || "—"}</td>
                     <td>{p.estado_sl || "—"}</td>
+                    <td title={p.etiquetas_sl}>{p.etiquetas_sl || "—"}</td>
                     <td>{p.precio_regular ? p.precio_regular.toLocaleString() : "—"}</td>
                     <td><FotoCell value={p.foto_descriptiva_sl} /></td>
                     <td title={p.website}>{p.website || "—"}</td>

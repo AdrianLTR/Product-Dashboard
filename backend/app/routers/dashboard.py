@@ -1,3 +1,4 @@
+import re
 from collections import Counter
 
 from fastapi import APIRouter, HTTPException, Query
@@ -8,6 +9,9 @@ from ..product import Product
 from ..utils import has_price, is_empty, stores_of
 
 router = APIRouter(prefix="/api/reports/{report_id}/dashboard", tags=["dashboard"])
+
+# Separadores posibles entre varias etiquetas en el campo Etiquetas SL
+_ETIQUETA_SPLIT_RE = re.compile(r"[,;|]+")
 
 # Campos que definen un producto "completo" (equivalente a KF en el HTML original)
 COMPLETENESS_FIELDS = [
@@ -140,6 +144,16 @@ def dashboard(
     marca_counter = Counter((r.marca or "").strip() or "(sin marca)" for r in rows)
     cat_counter = Counter((r.categoria_ecommerce or "").strip() for r in rows if (r.categoria_ecommerce or "").strip())
 
+    # Etiquetas SL: un producto puede tener varias, separadas por coma/;/|
+    etiqueta_counter: Counter = Counter()
+    sin_etiquetas = 0
+    for r in rows:
+        tags = [t.strip() for t in _ETIQUETA_SPLIT_RE.split(r.etiquetas_sl or "") if t.strip()]
+        if not tags:
+            sin_etiquetas += 1
+            continue
+        etiqueta_counter.update(set(tags))  # set: no contar dos veces la misma en un producto
+
     # Agrupacion por Departamento (derivado del grupo via Hoja Madre). Reemplaza
     # el agrupado por grupo de articulo, para entender las categorias por depto.
     deps_sin_fam = Counter(r.departamento for r in rows if is_empty(r.familia))
@@ -197,6 +211,8 @@ def dashboard(
         "estado_pie": [{"label": k or "(vacío)", "count": v} for k, v in estado_counts.most_common()],
         "top_marcas": _top(marca_counter, 10),
         "top_categorias": _top(cat_counter, 10),
+        "top_etiquetas": _top(etiqueta_counter, 12),
+        "sin_etiquetas": sin_etiquetas,
         "precio": {
             "con_precio": con_precio,
             "sin_precio": sin_precio,

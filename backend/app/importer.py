@@ -42,6 +42,7 @@ def import_xlsx(filename: str, file_bytes: bytes) -> dict:
                 precio_merca=to_float(mapped.get("precio_merca")),
                 grupo_articulo=mapped.get("grupo_articulo", ""),
                 formato=mapped.get("formato", ""),
+                etiquetas_sl=mapped.get("etiquetas_sl", ""),
                 extra=extra,
             )
         )

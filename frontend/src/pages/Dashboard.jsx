@@ -292,6 +292,7 @@ export default function Dashboard() {
                   <th>Categoría</th>
                   <th>Marca</th>
                   <th>Estado SL</th>
+                  <th>Etiquetas SL</th>
                   <th>Precio Regular</th>
                   <th>Foto</th>
                   <th>Website</th>
@@ -307,6 +308,7 @@ export default function Dashboard() {
                     <td>{p.categoria_ecommerce || "—"}</td>
                     <td>{p.marca || "—"}</td>
                     <td>{p.estado_sl || "—"}</td>
+                    <td title={p.etiquetas_sl}>{p.etiquetas_sl || "—"}</td>
                     <td>{p.precio_regular ? p.precio_regular.toLocaleString() : "—"}</td>
                     <td><FotoCell value={p.foto_descriptiva_sl} /></td>
                     <td title={p.website}>{p.website || "—"}</td>
@@ -354,6 +356,71 @@ export default function Dashboard() {
           <Bar label="Con precio" value={data.precio.con_precio} max={data.total} color="#18c896" onClick={() => toggleKpiType("con-precio")} />
           <Bar label="Sin precio" value={data.precio.sin_precio} max={data.total} color="#e04848" onClick={() => toggleKpiType("no-precio")} />
         </div>
+
+        <div className="cc">
+          <div className="cc-t">
+            Etiquetas SL
+            {data.sin_etiquetas > 0 && (
+              <span style={{ float: "right", color: "var(--red)", textTransform: "none", letterSpacing: 0 }}>
+                {data.sin_etiquetas.toLocaleString()} sin etiqueta
+              </span>
+            )}
+          </div>
+          {data.top_etiquetas && data.top_etiquetas.length ? (
+            data.top_etiquetas.map((t) => (
+              <Bar
+                key={t.label}
+                label={t.label}
+                value={t.count}
+                max={data.top_etiquetas[0].count}
+                color="#14b8a6"
+                right={`${t.count.toLocaleString()} · ${data.total ? Math.round((t.count / data.total) * 100) : 0}%`}
+              />
+            ))
+          ) : (
+            <div className="emp">Sin etiquetas en este reporte</div>
+          )}
+        </div>
+
+        <div className="cc">
+          <div className="cc-t">Departamentos · volumen</div>
+          {data.departamentos && data.departamentos.length ? (
+            data.departamentos.slice(0, 12).map((d) => (
+              <Bar
+                key={d.departamento}
+                label={d.departamento}
+                value={d.total}
+                max={data.departamentos[0].total}
+                color="#4a9eff"
+                right={d.total.toLocaleString()}
+              />
+            ))
+          ) : (
+            <div className="emp">Sin datos</div>
+          )}
+        </div>
+
+        <div className="cc">
+          <div className="cc-t">Departamentos · % completo</div>
+          {data.departamentos && data.departamentos.length ? (
+            [...data.departamentos]
+              .sort((a, b) => a.completos_pct - b.completos_pct)
+              .slice(0, 12)
+              .map((d) => (
+                <Bar
+                  key={d.departamento}
+                  label={d.departamento}
+                  value={d.completos_pct}
+                  max={100}
+                  color={d.completos_pct >= 90 ? "#18c896" : d.completos_pct >= 60 ? "#f0a030" : "#e04848"}
+                  right={`${d.completos_pct}% · ${d.total.toLocaleString()}`}
+                  title={`${d.departamento}: ${d.completos.toLocaleString()} completos de ${d.total.toLocaleString()}`}
+                />
+              ))
+          ) : (
+            <div className="emp">Sin datos</div>
+          )}
+        </div>
         <div className="cc">
           <div className="cc-t">Departamentos sin Familia</div>
           {data.deptos_sin_familia.length ? (
@@ -376,46 +443,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Desglose por Departamento (derivado del grupo via Hoja Madre) */}
-      <div className="cc">
-        <div className="cc-t">Por Departamento — completitud para entender las categorías</div>
-        {data.departamentos && data.departamentos.length ? (
-          <div className="embedded-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Departamento</th>
-                  <th>Total</th>
-                  <th>% Completo</th>
-                  <th>Sin Familia</th>
-                  <th>Sin Categoría</th>
-                  <th>Sin Foto</th>
-                  <th>Con Precio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.departamentos.map((d) => (
-                  <tr key={d.departamento}>
-                    <td>{d.departamento}</td>
-                    <td>{d.total.toLocaleString()}</td>
-                    <td>
-                      <span className={"bdg " + (d.completos_pct >= 90 ? "ok" : d.completos_pct >= 60 ? "ne" : "ms")}>
-                        {d.completos_pct}%
-                      </span>
-                    </td>
-                    <td>{d.sin_familia > 0 ? <span className="diff-rem">{d.sin_familia.toLocaleString()}</span> : "0"}</td>
-                    <td>{d.sin_categoria > 0 ? <span className="diff-rem">{d.sin_categoria.toLocaleString()}</span> : "0"}</td>
-                    <td>{d.sin_foto.toLocaleString()}</td>
-                    <td className="diff-add">{d.con_precio.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="emp">Sin datos</div>
-        )}
-      </div>
       </div>
     </div>
   );

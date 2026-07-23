@@ -19,7 +19,12 @@ KNOWN_COLUMNS = {
     "Precio Merca": "precio_merca",
     "Grupo de Articulo": "grupo_articulo",
     "Formato": "formato",
+    "Etiquetas SL": "etiquetas_sl",
 }
+
+# Variantes de encabezado con las que puede venir la columna de etiquetas.
+# Se usa para recuperarla de `extra` en reportes cargados antes de mapearla.
+_ETIQUETAS_ALIASES = ("Etiquetas SL", "Etiquetas", "Etiqueta SL", "Etiquetas sl", "etiquetas sl")
 
 
 @dataclass
@@ -38,6 +43,7 @@ class Product:
     precio_merca: float | None = None
     grupo_articulo: str = ""
     formato: str = ""
+    etiquetas_sl: str = ""
     extra: dict = field(default_factory=dict)
     # Derivado del grupo via Hoja Madre; no se persiste (siempre se recalcula
     # al leer, asi un cambio en el mapeo aplica sin re-subir reportes).
@@ -45,6 +51,14 @@ class Product:
 
     def __post_init__(self):
         self.departamento = departamento_of(self.grupo_articulo)
+        # Reportes cargados antes de mapear esta columna la tienen en `extra`;
+        # recuperarla evita tener que volver a subirlos.
+        if not self.etiquetas_sl and self.extra:
+            for alias in _ETIQUETAS_ALIASES:
+                v = self.extra.get(alias)
+                if v:
+                    self.etiquetas_sl = str(v)
+                    break
 
     def to_dict(self) -> dict:
         return {
@@ -62,6 +76,7 @@ class Product:
             "precio_merca": self.precio_merca,
             "grupo_articulo": self.grupo_articulo,
             "formato": self.formato,
+            "etiquetas_sl": self.etiquetas_sl,
             "extra": self.extra,
         }
 

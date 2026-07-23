@@ -30,6 +30,7 @@ class ProductOut(BaseModel):
     precio_merca: float | None
     grupo_articulo: str
     formato: str
+    etiquetas_sl: str = ""
     departamento: str = ""
 
 

@@ -26,6 +26,7 @@ PRODUCT_COLUMNS = [
     ("website", "Website"),
     ("grupo_articulo", "Grupo de Articulo"),
     ("departamento", "Departamento"),
+    ("etiquetas_sl", "Etiquetas SL"),
     ("formato", "Formato"),
     ("descripcion_detallada", "Descripción detallada"),
     ("foto_descriptiva_sl", "Foto descriptiva SL"),
