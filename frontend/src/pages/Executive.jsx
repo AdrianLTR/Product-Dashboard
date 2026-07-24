@@ -9,6 +9,7 @@ import { useReports } from "../context/ReportContext";
 const DRILL_PARAMS = {
   "Total SKU": {},
   "Visibles": { estado: "Visible" },
+  "Drafts": { estado: "Draft" },
   "Completos": { kpi_types: "completos" },
   "⚡ Prioridad": { kpi_types: "prioridad" },
   "Con Precio": { kpi_types: "con-precio" },
@@ -103,6 +104,13 @@ function StoreCard({ store, hasPrev, onDrill }) {
 
       <div className="kpi-row">
         <KpiTile label="Visibles" value={store.visibles} delta={d.visibles} onClick={() => onDrill("Visibles", store.name)} />
+        <KpiTile
+          label="Drafts"
+          value={store.drafts ?? 0}
+          delta={d.drafts}
+          higherIsBetter={false}
+          onClick={() => onDrill("Drafts", store.name)}
+        />
         <KpiTile label="Completos" value={store.completos} delta={d.completos} onClick={() => onDrill("Completos", store.name)} />
         <KpiTile label="Con Precio" value={store.con_precio} delta={d.con_precio} onClick={() => onDrill("Con Precio", store.name)} />
         <KpiTile
@@ -247,6 +255,13 @@ export default function Executive() {
         <div className="kpi-row">
           <KpiTile label="Total SKU" value={g.total} delta={gd.total} onClick={() => openDrill("Total SKU", null)} />
           <KpiTile label="Visibles" value={g.visibles} delta={gd.visibles} onClick={() => openDrill("Visibles", null)} />
+          <KpiTile
+            label="Drafts"
+            value={g.drafts ?? 0}
+            delta={gd.drafts}
+            higherIsBetter={false}
+            onClick={() => openDrill("Drafts", null)}
+          />
           <KpiTile label="Completos" value={g.completos} delta={gd.completos} onClick={() => openDrill("Completos", null)} />
           <KpiTile
             label="⚡ Prioridad"

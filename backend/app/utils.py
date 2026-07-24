@@ -120,9 +120,13 @@ def is_complete(row) -> bool:
 
 
 def is_priority(row) -> bool:
-    """Prioridad maxima de trabajo: ya tiene foto (el insumo mas caro de
-    conseguir) pero la ficha aun no esta completa. Cerrarlos es rapido porque
-    solo falta contenido, no fotografia."""
+    """Prioridad maxima de trabajo: esta en Draft (aun no publicado), ya
+    tiene foto (el insumo mas caro de conseguir) pero la ficha no esta
+    completa. Cerrarlos es rapido porque solo falta contenido, no
+    fotografia. Un producto Visible NUNCA es prioridad aunque le falte
+    algun campo — ya esta publicado, no es lo mismo que un Draft pendiente."""
+    if (row.estado_sl or "").strip().lower() != "draft":
+        return False
     return not is_empty(row.foto_descriptiva_sl) and not is_complete(row)
 
 

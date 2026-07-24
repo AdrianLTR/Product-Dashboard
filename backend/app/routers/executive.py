@@ -12,12 +12,17 @@ def _visible(r: Product) -> bool:
     return (r.estado_sl or "").strip().lower() == "visible"
 
 
+def _draft(r: Product) -> bool:
+    return (r.estado_sl or "").strip().lower() == "draft"
+
+
 def _metrics(rows: list[Product]) -> dict:
     total = len(rows)
     return {
         "total": total,
         "kpi_score": kpi_score(rows),
         "visibles": sum(1 for r in rows if _visible(r)),
+        "drafts": sum(1 for r in rows if _draft(r)),
         "completos": sum(1 for r in rows if is_complete(r)),
         # Prioridad: con foto pero ficha incompleta — lo mas rapido de cerrar
         "prioridad": sum(1 for r in rows if is_priority(r)),
