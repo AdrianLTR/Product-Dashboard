@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import DeltaModal from "../components/DeltaModal";
 import DrillModal from "../components/DrillModal";
 import { reportDate as fmtReportDate, reportSortValue } from "../dates";
 import { useReports } from "../context/ReportContext";
@@ -17,6 +18,20 @@ const DRILL_PARAMS = {
   "Sin Familia": { kpi_types: "no-familia" },
   "Sin Nombre": { kpi_types: "no-nombre" },
   "Sin Cat": { kpi_types: "no-cat" },
+};
+
+// Label del indicador -> nombre que espera /executive-delta
+const DELTA_INDICATORS = {
+  "Total SKU": "total",
+  "Visibles": "visibles",
+  "Drafts": "drafts",
+  "Completos": "completos",
+  "⚡ Prioridad": "prioridad",
+  "Con Precio": "con_precio",
+  "Sin Foto": "sin_foto",
+  "Sin Familia": "sin_familia",
+  "Sin Nombre": "sin_nombre",
+  "Sin Cat": "sin_categoria",
 };
 
 function scoreColor(score) {
@@ -45,8 +60,9 @@ function trendArrow(v) {
   return v > 0 ? "▲" : "▼";
 }
 
-// Renderiza un "kpi tile" con valor grande y delta abajo si hay reporte previo
-function KpiTile({ label, value, delta, higherIsBetter = true, decimals = 0, format = (v) => v.toLocaleString(), onClick }) {
+// Renderiza un "kpi tile" con valor grande y delta abajo si hay reporte previo.
+// El valor abre el detalle actual; el delta abre "quienes entraron/salieron".
+function KpiTile({ label, value, delta, higherIsBetter = true, decimals = 0, format = (v) => v.toLocaleString(), onClick, onDeltaClick }) {
   const tc = trendClass(delta, higherIsBetter);
   return (
     <div
@@ -58,16 +74,23 @@ function KpiTile({ label, value, delta, higherIsBetter = true, decimals = 0, for
       <div className="kpi-tile-l">{label}</div>
       <div className="kpi-tile-v">{format(value)}</div>
       {delta !== null && delta !== undefined && (
-        <div className={"kpi-tile-t trend " + tc}>
+        <div
+          className={"kpi-tile-t trend " + tc + (onDeltaClick ? " delta-link" : "")}
+          onClick={onDeltaClick ? (e) => { e.stopPropagation(); onDeltaClick(); } : undefined}
+          title={onDeltaClick ? "Clic para ver cuáles cambiaron" : undefined}
+        >
           {trendArrow(delta)} {fmtDelta(delta, { decimals })}
-          <span style={{ color: "var(--tx3)", marginLeft: 4 }}>vs anterior</span>
+          <span style={{ color: "var(--tx3)", marginLeft: 4 }}>
+            vs anterior{onDeltaClick ? " ↗" : ""}
+          </span>
         </div>
       )}
     </div>
   );
 }
 
-function StoreCard({ store, hasPrev, onDrill }) {
+function StoreCard({ store, hasPrev, onDrill, onDelta }) {
+  const deltaFor = (label) => (hasPrev ? () => onDelta(label, store.name) : undefined);
   const d = store.delta || {};
   const kpiTrend = trendClass(d.kpi_score);
   // Badge de pendiente clickeable: abre el detalle de ese indicador en esta tienda
@@ -103,22 +126,24 @@ function StoreCard({ store, hasPrev, onDrill }) {
       </div>
 
       <div className="kpi-row">
-        <KpiTile label="Visibles" value={store.visibles} delta={d.visibles} onClick={() => onDrill("Visibles", store.name)} />
+        <KpiTile label="Visibles" value={store.visibles} delta={d.visibles} onClick={() => onDrill("Visibles", store.name)} onDeltaClick={deltaFor("Visibles")} />
         <KpiTile
           label="Drafts"
           value={store.drafts ?? 0}
           delta={d.drafts}
           higherIsBetter={false}
           onClick={() => onDrill("Drafts", store.name)}
+          onDeltaClick={deltaFor("Drafts")}
         />
-        <KpiTile label="Completos" value={store.completos} delta={d.completos} onClick={() => onDrill("Completos", store.name)} />
-        <KpiTile label="Con Precio" value={store.con_precio} delta={d.con_precio} onClick={() => onDrill("Con Precio", store.name)} />
+        <KpiTile label="Completos" value={store.completos} delta={d.completos} onClick={() => onDrill("Completos", store.name)} onDeltaClick={deltaFor("Completos")} />
+        <KpiTile label="Con Precio" value={store.con_precio} delta={d.con_precio} onClick={() => onDrill("Con Precio", store.name)} onDeltaClick={deltaFor("Con Precio")} />
         <KpiTile
           label="⚡ Prioridad"
           value={store.prioridad ?? 0}
           delta={d.prioridad}
           higherIsBetter={false}
           onClick={() => onDrill("⚡ Prioridad", store.name)}
+          onDeltaClick={deltaFor("⚡ Prioridad")}
         />
       </div>
 
@@ -177,6 +202,9 @@ export default function Executive() {
   // Detalle (drill-down) de un indicador: {label, website} o null
   const [drill, setDrill] = useState(null);
   const openDrill = (label, website) => setDrill({ label, website });
+  // Detalle del cambio (delta): que SKUs entraron/salieron del indicador
+  const [delta, setDelta] = useState(null);
+  const openDelta = (label, website) => setDelta({ label, website });
 
   if (!currentReportId) {
     return <div className="emp">Carga o selecciona un reporte primero en "Cargar Reporte".</div>;
@@ -253,26 +281,28 @@ export default function Executive() {
           )}
         </div>
         <div className="kpi-row">
-          <KpiTile label="Total SKU" value={g.total} delta={gd.total} onClick={() => openDrill("Total SKU", null)} />
-          <KpiTile label="Visibles" value={g.visibles} delta={gd.visibles} onClick={() => openDrill("Visibles", null)} />
+          <KpiTile label="Total SKU" value={g.total} delta={gd.total} onClick={() => openDrill("Total SKU", null)} onDeltaClick={hasPrev ? () => openDelta("Total SKU", null) : undefined} />
+          <KpiTile label="Visibles" value={g.visibles} delta={gd.visibles} onClick={() => openDrill("Visibles", null)} onDeltaClick={hasPrev ? () => openDelta("Visibles", null) : undefined} />
           <KpiTile
             label="Drafts"
             value={g.drafts ?? 0}
             delta={gd.drafts}
             higherIsBetter={false}
             onClick={() => openDrill("Drafts", null)}
+            onDeltaClick={hasPrev ? () => openDelta("Drafts", null) : undefined}
           />
-          <KpiTile label="Completos" value={g.completos} delta={gd.completos} onClick={() => openDrill("Completos", null)} />
+          <KpiTile label="Completos" value={g.completos} delta={gd.completos} onClick={() => openDrill("Completos", null)} onDeltaClick={hasPrev ? () => openDelta("Completos", null) : undefined} />
           <KpiTile
             label="⚡ Prioridad"
             value={g.prioridad ?? 0}
             delta={gd.prioridad}
             higherIsBetter={false}
             onClick={() => openDrill("⚡ Prioridad", null)}
+            onDeltaClick={hasPrev ? () => openDelta("⚡ Prioridad", null) : undefined}
           />
-          <KpiTile label="Con Precio" value={g.con_precio} delta={gd.con_precio} onClick={() => openDrill("Con Precio", null)} />
-          <KpiTile label="Sin Foto" value={g.sin_foto} delta={gd.sin_foto} higherIsBetter={false} onClick={() => openDrill("Sin Foto", null)} />
-          <KpiTile label="Sin Familia" value={g.sin_familia} delta={gd.sin_familia} higherIsBetter={false} onClick={() => openDrill("Sin Familia", null)} />
+          <KpiTile label="Con Precio" value={g.con_precio} delta={gd.con_precio} onClick={() => openDrill("Con Precio", null)} onDeltaClick={hasPrev ? () => openDelta("Con Precio", null) : undefined} />
+          <KpiTile label="Sin Foto" value={g.sin_foto} delta={gd.sin_foto} higherIsBetter={false} onClick={() => openDrill("Sin Foto", null)} onDeltaClick={hasPrev ? () => openDelta("Sin Foto", null) : undefined} />
+          <KpiTile label="Sin Familia" value={g.sin_familia} delta={gd.sin_familia} higherIsBetter={false} onClick={() => openDrill("Sin Familia", null)} onDeltaClick={hasPrev ? () => openDelta("Sin Familia", null) : undefined} />
         </div>
       </div>
 
@@ -292,7 +322,7 @@ export default function Executive() {
       ) : (
         <div className="ch2">
           {visibleStores.map((s) => (
-            <StoreCard key={s.name} store={s} hasPrev={hasPrev} onDrill={openDrill} />
+            <StoreCard key={s.name} store={s} hasPrev={hasPrev} onDrill={openDrill} onDelta={openDelta} />
           ))}
         </div>
       )}
@@ -307,6 +337,17 @@ export default function Executive() {
           subtitle={data ? `${data.current.filename} (${fmtReportDate(data.current)})` : ""}
           params={{ ...(DRILL_PARAMS[drill.label] || {}), ...(drill.website ? { website: drill.website } : {}) }}
           onClose={() => setDrill(null)}
+        />
+      )}
+
+      {delta && (
+        <DeltaModal
+          reportId={reportId}
+          indicator={DELTA_INDICATORS[delta.label]}
+          label={delta.label}
+          website={delta.website}
+          compareId={compareId || undefined}
+          onClose={() => setDelta(null)}
         />
       )}
     </>

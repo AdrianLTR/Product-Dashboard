@@ -356,9 +356,13 @@ export default function Dashboard() {
       <div className="ch2">
         <div className="cc">
           <div className="cc-t">Estado SL</div>
+          <div className="chart-note">
+            Cada producto tiene un solo estado, así que estas barras suman el total
+            ({data.total.toLocaleString()}). La barra llena = el total filtrado.
+          </div>
           {data.estado_pie.length ? (
             data.estado_pie.map((e) => (
-              <Bar key={e.label} label={e.label} value={e.count} max={data.total} color="#4a9eff" />
+              <Bar key={e.label} label={e.label} value={e.count} max={data.total} color="#4a9eff" right={`${e.count.toLocaleString()} · ${data.total ? Math.round((e.count / data.total) * 100) : 0}%`} />
             ))
           ) : (
             <div className="emp">Sin datos</div>
@@ -366,19 +370,13 @@ export default function Dashboard() {
         </div>
         <div className="cc">
           <div className="cc-t">Top Marcas</div>
+          <div className="chart-note">
+            Solo las 10 marcas con más productos, no todas — por eso no suman el total.
+            La barra llena = la marca más grande, no el 100%.
+          </div>
           {data.top_marcas.length ? (
             data.top_marcas.map((m) => (
-              <Bar key={m.label} label={m.label} value={m.count} max={data.top_marcas[0].count} color="#a78bfa" />
-            ))
-          ) : (
-            <div className="emp">Sin datos</div>
-          )}
-        </div>
-        <div className="cc">
-          <div className="cc-t">Top Categorías eComm</div>
-          {data.top_categorias.length ? (
-            data.top_categorias.map((c) => (
-              <Bar key={c.label} label={c.label} value={c.count} max={data.top_categorias[0].count} color="#6366f1" />
+              <Bar key={m.label} label={m.label} value={m.count} max={data.top_marcas[0].count} color="#a78bfa" right={`${m.count.toLocaleString()} · ${data.total ? Math.round((m.count / data.total) * 100) : 0}%`} />
             ))
           ) : (
             <div className="emp">Sin datos</div>
@@ -386,8 +384,12 @@ export default function Dashboard() {
         </div>
         <div className="cc">
           <div className="cc-t">Precio</div>
-          <Bar label="Con precio" value={data.precio.con_precio} max={data.total} color="#18c896" onClick={() => toggleKpiType("con-precio")} />
-          <Bar label="Sin precio" value={data.precio.sin_precio} max={data.total} color="#e04848" onClick={() => toggleKpiType("no-precio")} />
+          <div className="chart-note">
+            Sobre el total filtrado ({data.total.toLocaleString()}): con precio + sin precio suman el total.
+            Clic en una barra la aplica como filtro.
+          </div>
+          <Bar label="Con precio" value={data.precio.con_precio} max={data.total} color="#18c896" onClick={() => toggleKpiType("con-precio")} right={`${data.precio.con_precio.toLocaleString()} · ${data.total ? Math.round((data.precio.con_precio / data.total) * 100) : 0}%`} />
+          <Bar label="Sin precio" value={data.precio.sin_precio} max={data.total} color="#e04848" onClick={() => toggleKpiType("no-precio")} right={`${data.precio.sin_precio.toLocaleString()} · ${data.total ? Math.round((data.precio.sin_precio / data.total) * 100) : 0}%`} />
         </div>
 
         <div className="cc">
@@ -399,11 +401,12 @@ export default function Dashboard() {
               </span>
             )}
           </div>
-          {etiquetas.length > 0 && (
-            <div className="sh-sub" style={{ marginBottom: 8 }}>
-              Mostrando las etiquetas que conviven con el filtro activo. Usa el dropdown de arriba para ver la lista completa.
-            </div>
-          )}
+          <div className="chart-note">
+            Un producto puede tener varias etiquetas, así que estas barras NO suman el total
+            — un mismo SKU cuenta en cada etiqueta que tenga. El % es sobre el total filtrado
+            ({data.total.toLocaleString()}). Clic en una barra la aplica como filtro.
+            {etiquetas.length > 0 && " Con filtro activo, la lista muestra solo las etiquetas que conviven con él."}
+          </div>
           {data.top_etiquetas && data.top_etiquetas.length ? (
             data.top_etiquetas.map((t) => (
               <Bar
@@ -423,7 +426,12 @@ export default function Dashboard() {
         </div>
 
         <div className="cc">
-          <div className="cc-t">⚡ Prioridad por departamento — con foto, sin terminar</div>
+          <div className="cc-t">⚡ Prioridad por departamento</div>
+          <div className="chart-note">
+            Prioridad = está en Draft + ya tiene foto + ficha incompleta. Solo se muestran
+            los departamentos que tienen alguno. La barra llena = el departamento con más
+            prioridades, no el 100%.
+          </div>
           {data.departamentos && data.departamentos.some((d) => d.prioridad > 0) ? (
             [...data.departamentos]
               .filter((d) => d.prioridad > 0)
@@ -446,6 +454,10 @@ export default function Dashboard() {
 
         <div className="cc">
           <div className="cc-t">Departamentos · volumen</div>
+          <div className="chart-note">
+            Cuántos SKUs tiene cada departamento (top 12). Cada producto pertenece a uno
+            solo, vía su Grupo de Artículo; los que no están en la Hoja Madre caen en "Otros".
+          </div>
           {data.departamentos && data.departamentos.length ? (
             data.departamentos.slice(0, 12).map((d) => (
               <Bar
@@ -464,6 +476,11 @@ export default function Dashboard() {
 
         <div className="cc">
           <div className="cc-t">Departamentos · % completo</div>
+          <div className="chart-note">
+            % de productos con los 7 campos llenos (nombre, familia, categoría, descripción,
+            foto, website, estado). Ordenado de peor a mejor: arriba están los que necesitan
+            más trabajo. A la derecha: % y total del departamento.
+          </div>
           {data.departamentos && data.departamentos.length ? (
             [...data.departamentos]
               .sort((a, b) => a.completos_pct - b.completos_pct)
@@ -485,6 +502,10 @@ export default function Dashboard() {
         </div>
         <div className="cc">
           <div className="cc-t">Departamentos sin Familia</div>
+          <div className="chart-note">
+            De los {data.cards.sin_familia.toLocaleString()} productos sin familia, en qué
+            departamentos están (top 7). No suma el total del reporte, solo ese subconjunto.
+          </div>
           {data.deptos_sin_familia.length ? (
             data.deptos_sin_familia.map((g) => (
               <Bar key={g.label} label={g.label} value={g.count} max={data.deptos_sin_familia[0].count} color="#f0a030" />
@@ -495,6 +516,10 @@ export default function Dashboard() {
         </div>
         <div className="cc">
           <div className="cc-t">Departamentos sin Categoría</div>
+          <div className="chart-note">
+            De los {data.cards.sin_categoria.toLocaleString()} productos sin categoría, en qué
+            departamentos están (top 7). No suma el total del reporte, solo ese subconjunto.
+          </div>
           {data.deptos_sin_categoria.length ? (
             data.deptos_sin_categoria.map((g) => (
               <Bar key={g.label} label={g.label} value={g.count} max={data.deptos_sin_categoria[0].count} color="#a78bfa" />

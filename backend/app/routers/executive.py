@@ -97,3 +97,99 @@ def executive(
         "global": {**cur_global, "delta": _deltas(cur_global, prev_global)},
         "stores": stores_out,
     }
+
+
+# Predicado por indicador, para poder responder "cuales entraron/salieron"
+_INDICATOR_PREDICATES = {
+    "visibles": _visible,
+    "drafts": _draft,
+    "completos": is_complete,
+    "prioridad": is_priority,
+    "con_precio": lambda r: has_price(r.precio_regular),
+    "sin_foto": lambda r: is_empty(r.foto_descriptiva_sl),
+    "sin_familia": lambda r: is_empty(r.familia),
+    "sin_categoria": lambda r: is_empty(r.categoria_ecommerce),
+    "sin_nombre": lambda r: is_empty(r.nombre),
+    "total": lambda r: True,
+}
+
+
+def _as_dict(rows: list[Product]) -> dict[str, Product]:
+    return {r.sku: r for r in rows if r.sku}
+
+
+@router.get("/{report_id}/executive-delta")
+def executive_delta(
+    report_id: int,
+    indicator: str = Query(..., description="visibles|drafts|completos|prioridad|con_precio|sin_foto|sin_familia|sin_categoria|sin_nombre|total"),
+    compare_id: int | None = Query(None),
+    website: str | None = Query(None, description="Acotar a un website; si se omite, es global"),
+    limit: int = Query(1000, ge=1, le=5000),
+):
+    """Detalle del delta de un indicador: que SKUs ENTRARON al indicador y
+    cuales SALIERON entre el reporte de comparacion y el actual. Es lo que
+    hay detras del '+15' que muestra el Resumen Ejecutivo."""
+    pred = _INDICATOR_PREDICATES.get(indicator)
+    if not pred:
+        raise HTTPException(400, f"Indicador desconocido: {indicator}")
+    meta = storage.get_report_meta(report_id)
+    if not meta:
+        raise HTTPException(404, "Reporte no encontrado")
+
+    if compare_id is not None:
+        prev_meta = storage.get_report_meta(compare_id)
+        if not prev_meta:
+            raise HTTPException(404, "Reporte de comparación no encontrado")
+    else:
+        all_reports = sorted(storage.list_reports(), key=storage.report_sort_key)
+        idx = next((i for i, m in enumerate(all_reports) if m["id"] == report_id), None)
+        prev_meta = all_reports[idx - 1] if idx and idx > 0 else None
+
+    cur_rows = get_report_products(report_id)
+    prev_rows = get_report_products(prev_meta["id"]) if prev_meta else []
+
+    if website:
+        cur_rows = [r for r in cur_rows if website in stores_of(r.website)]
+        prev_rows = [r for r in prev_rows if website in stores_of(r.website)]
+
+    cur_idx = _as_dict(cur_rows)
+    prev_idx = _as_dict(prev_rows)
+
+    cur_in = {sku for sku, r in cur_idx.items() if pred(r)}
+    prev_in = {sku for sku, r in prev_idx.items() if pred(r)}
+
+    def _row(sku: str, source: dict[str, Product]) -> dict:
+        r = source[sku]
+        return {
+            "sku": r.sku,
+            "nombre": r.nombre,
+            "departamento": r.departamento,
+            "familia": r.familia,
+            "categoria_ecommerce": r.categoria_ecommerce,
+            "marca": r.marca,
+            "estado_sl": r.estado_sl,
+            "etiquetas_sl": r.etiquetas_sl,
+            "foto_descriptiva_sl": r.foto_descriptiva_sl,
+            "precio_regular": r.precio_regular,
+            "website": r.website,
+            # Un SKU que no existia en el reporte anterior es nuevo del catalogo,
+            # no solo "entro al indicador" — util para distinguirlos en la tabla.
+            "es_sku_nuevo": sku not in prev_idx,
+        }
+
+    entraron = sorted(cur_in - prev_in)
+    salieron = sorted(prev_in - cur_in)
+
+    return {
+        "indicator": indicator,
+        "website": website,
+        "current": meta,
+        "previous": prev_meta,
+        "count_before": len(prev_in),
+        "count_after": len(cur_in),
+        "delta": len(cur_in) - len(prev_in),
+        "entraron_count": len(entraron),
+        "salieron_count": len(salieron),
+        "entraron": [_row(s, cur_idx) for s in entraron[:limit]],
+        "salieron": [_row(s, prev_idx) for s in salieron[:limit]],
+    }
