@@ -103,14 +103,19 @@ interno de CCN.
 
 ## Entornos
 
-- Backend (Python): venv dedicado en `C:\Users\Alorenzo\.venvs\product_hub` (fuera de OneDrive).
-- Frontend (Node): requiere Node.js LTS instalado (`winget install OpenJS.NodeJS.LTS`).
+- Backend (Python 3.12+): crear un venv dedicado, idealmente fuera de una
+  carpeta sincronizada tipo OneDrive (evita bloqueos de archivos):
+  ```
+  python -m venv C:\venvs\product_hub
+  C:\venvs\product_hub\Scripts\pip install -r backend\requirements.txt
+  ```
+- Frontend (Node LTS): `winget install OpenJS.NodeJS.LTS` si no está instalado.
 
 ## Desarrollo (dos procesos)
 
 Terminal 1 — backend:
 ```
-C:\Users\Alorenzo\.venvs\product_hub\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+C:\venvs\product_hub\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 (ejecutar desde `backend/`)
 
@@ -133,12 +138,25 @@ npm install
 npm run build          # genera frontend/dist
 
 cd ../backend
-C:\Users\Alorenzo\.venvs\product_hub\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+C:\venvs\product_hub\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Abrir el puerto en el firewall de Windows (una sola vez, como administrador):
+```
+New-NetFirewallRule -DisplayName "Product Hub CCN" -Direction Inbound -LocalPort 8000 -Protocol TCP -Action Allow
 ```
 
 Desde cualquier PC de la red de la empresa, entrar a `http://<IP-de-esta-maquina>:8000`
 (la IP se ve con `ipconfig`). La máquina que corre el servidor debe quedar
 encendida y con el firewall permitiendo el puerto 8000 en la red local.
+
+### Actualizar el proyecto (cuando haya cambios nuevos)
+
+```
+git pull
+cd frontend && npm install && npm run build && cd ..
+```
+Y reiniciar el proceso de uvicorn (Ctrl+C y volver a correr el comando de arriba).
 
 ## Datos
 
