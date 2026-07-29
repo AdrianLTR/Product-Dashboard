@@ -2,6 +2,7 @@ import re
 
 from . import storage
 from .product import Product
+from .brands import is_private_brand
 from .utils import (
     COMPLETENESS_FIELDS,
     etiquetas_of,
@@ -100,6 +101,7 @@ def apply_dashboard_filters(
 _KPI_PREDICATES = {
     "completos": lambda r: is_complete(r),
     "prioridad": lambda r: is_priority(r),
+    "marca-propia": lambda r: is_private_brand(r.marca),
     "no-nombre": lambda r: is_empty(r.nombre),
     "no-familia": lambda r: is_empty(r.familia),
     "no-cat": lambda r: is_empty(r.categoria_ecommerce),

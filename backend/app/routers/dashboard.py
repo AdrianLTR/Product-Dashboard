@@ -3,6 +3,7 @@ from collections import Counter
 from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
+from ..brands import is_private_brand
 from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products
 from ..product import Product
 from ..utils import etiquetas_of, has_price, is_empty, is_priority, stores_of
@@ -139,6 +140,7 @@ def dashboard(
     comp = sum(1 for r in rows if _is_complete(r))
     # Prioridad: ya tienen foto pero la ficha no esta completa
     prioridad = sum(1 for r in rows if is_priority(r))
+    marcas_propias = sum(1 for r in rows if is_private_brand(r.marca))
     con_precio = sum(1 for r in rows if has_price(r.precio_regular))
     sin_precio = total - con_precio
     con_precio_merca = sum(1 for r in rows if has_price(r.precio_merca))
@@ -214,6 +216,7 @@ def dashboard(
             "con_precio": con_precio,
             "sin_precio": sin_precio,
             "prioridad": prioridad,
+            "marcas_propias": marcas_propias,
         },
         "estado_pie": [{"label": k or "(vacío)", "count": v} for k, v in estado_counts.most_common()],
         "top_marcas": _top(marca_counter, 10),

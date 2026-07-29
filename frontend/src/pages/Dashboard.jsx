@@ -280,6 +280,15 @@ export default function Dashboard() {
           active={isTypeActive("prioridad")}
           title="Ya tienen foto pero la ficha está incompleta — lo más rápido de cerrar"
         />
+        <StatCard
+          label="Marcas Propias"
+          colorClass="cb"
+          value={(data.cards.marcas_propias ?? 0).toLocaleString()}
+          sub="marca privada"
+          onClick={() => toggleKpiType("marca-propia")}
+          active={isTypeActive("marca-propia")}
+          title="LIDER, FOOD CLUB, SIMPLY DONE, TOP CARE y demás marcas privadas de CCN"
+        />
         <StatCard label="Sin Familia" colorClass="ca" value={data.cards.sin_familia.toLocaleString()} onClick={() => toggleKpiType("no-familia")} active={isTypeActive("no-familia")} />
         <StatCard label="Sin Cat." colorClass="ca" value={data.cards.sin_categoria.toLocaleString()} onClick={() => toggleKpiType("no-cat")} active={isTypeActive("no-cat")} />
         <StatCard label="Sin Nombre" colorClass="cr" value={data.cards.sin_nombre.toLocaleString()} onClick={() => toggleKpiType("no-nombre")} active={isTypeActive("no-nombre")} />
