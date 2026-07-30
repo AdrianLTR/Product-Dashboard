@@ -31,6 +31,7 @@ class ProductOut(BaseModel):
     grupo_articulo: str
     formato: str
     etiquetas_sl: str = ""
+    descripcion_sap: str = ""
     departamento: str = ""
 
 

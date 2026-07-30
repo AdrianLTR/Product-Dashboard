@@ -43,6 +43,7 @@ def import_xlsx(filename: str, file_bytes: bytes) -> dict:
                 grupo_articulo=mapped.get("grupo_articulo", ""),
                 formato=mapped.get("formato", ""),
                 etiquetas_sl=mapped.get("etiquetas_sl", ""),
+                descripcion_sap=mapped.get("descripcion_sap", ""),
                 extra=extra,
             )
         )

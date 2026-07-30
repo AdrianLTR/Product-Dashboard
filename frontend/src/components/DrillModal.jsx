@@ -60,7 +60,7 @@ export default function DrillModal({ reportId, title, subtitle, params, onClose 
                   <th>SKU</th>
                   <th>Nombre</th>
                   <th>Departamento</th>
-                  <th>Familia</th>
+                  <th>Descripcion SAP</th>
                   <th>Categoría</th>
                   <th>Marca</th>
                   <th>Estado SL</th>
@@ -76,7 +76,7 @@ export default function DrillModal({ reportId, title, subtitle, params, onClose 
                     <td>{p.sku}</td>
                     <td title={p.nombre}>{p.nombre || "—"}</td>
                     <td>{p.departamento || "—"}</td>
-                    <td>{p.familia || "—"}</td>
+                    <td title={p.descripcion_sap}>{p.descripcion_sap || "—"}</td>
                     <td>{p.categoria_ecommerce || "—"}</td>
                     <td>{p.marca || "—"}</td>
                     <td>{p.estado_sl || "—"}</td>

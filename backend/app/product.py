@@ -20,11 +20,14 @@ KNOWN_COLUMNS = {
     "Grupo de Articulo": "grupo_articulo",
     "Formato": "formato",
     "Etiquetas SL": "etiquetas_sl",
+    "Descripcion SAP": "descripcion_sap",
+    "Descripción SAP": "descripcion_sap",
 }
 
 # Variantes de encabezado con las que puede venir la columna de etiquetas.
 # Se usa para recuperarla de `extra` en reportes cargados antes de mapearla.
 _ETIQUETAS_ALIASES = ("Etiquetas SL", "Etiquetas", "Etiqueta SL", "Etiquetas sl", "etiquetas sl")
+_SAP_ALIASES = ("Descripcion SAP", "Descripción SAP", "Descripcion sap", "descripcion sap", "DescripcionSAP")
 
 
 @dataclass
@@ -44,6 +47,7 @@ class Product:
     grupo_articulo: str = ""
     formato: str = ""
     etiquetas_sl: str = ""
+    descripcion_sap: str = ""
     extra: dict = field(default_factory=dict)
     # Derivado del grupo via Hoja Madre; no se persiste (siempre se recalcula
     # al leer, asi un cambio en el mapeo aplica sin re-subir reportes).
@@ -58,6 +62,12 @@ class Product:
                 v = self.extra.get(alias)
                 if v:
                     self.etiquetas_sl = str(v)
+                    break
+        if not self.descripcion_sap and self.extra:
+            for alias in _SAP_ALIASES:
+                v = self.extra.get(alias)
+                if v:
+                    self.descripcion_sap = str(v)
                     break
 
     def to_dict(self) -> dict:
@@ -77,6 +87,7 @@ class Product:
             "grupo_articulo": self.grupo_articulo,
             "formato": self.formato,
             "etiquetas_sl": self.etiquetas_sl,
+            "descripcion_sap": self.descripcion_sap,
             "extra": self.extra,
         }
 

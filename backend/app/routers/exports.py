@@ -17,6 +17,7 @@ XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 PRODUCT_COLUMNS = [
     ("sku", "SKU"),
     ("nombre", "Nombre"),
+    ("descripcion_sap", "Descripcion SAP"),
     ("familia", "Familia"),
     ("categoria_ecommerce", "Categoria eCommerce"),
     ("marca", "Marca"),

@@ -97,7 +97,7 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
                       <th>SKU</th>
                       <th>Nombre</th>
                       <th>Departamento</th>
-                      <th>Familia</th>
+                      <th>Descripcion SAP</th>
                       <th>Estado SL</th>
                       <th>Etiquetas SL</th>
                       <th>Foto</th>
@@ -115,7 +115,7 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
                         </td>
                         <td title={p.nombre}>{p.nombre || "—"}</td>
                         <td>{p.departamento || "—"}</td>
-                        <td>{p.familia || "—"}</td>
+                        <td title={p.descripcion_sap}>{p.descripcion_sap || "—"}</td>
                         <td>{p.estado_sl || "—"}</td>
                         <td title={p.etiquetas_sl}>{p.etiquetas_sl || "—"}</td>
                         <td><FotoCell value={p.foto_descriptiva_sl} /></td>
