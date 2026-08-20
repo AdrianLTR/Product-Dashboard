@@ -43,11 +43,23 @@ def _category_prefixes(categoria: str) -> set[str]:
 
 
 @router.get("/{report_id}/category-website")
-def category_website(report_id: int, sample_limit: int = Query(500, ge=1, le=5000)):
+def category_website(
+    report_id: int,
+    estado: str | None = Query(
+        None,
+        description="Filtrar por Estado SL (Visible|Draft|Invisible). Vacio = todos. "
+        "Visible es el foco principal: son los productos que Magento ya publica y a los "
+        "que si les falta la categoria, se apagan.",
+    ),
+    sample_limit: int = Query(500, ge=1, le=5000),
+):
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
 
     rows = get_report_products(report_id)
+    estado_norm = (estado or "").strip().lower()
+    if estado_norm:
+        rows = [r for r in rows if (r.estado_sl or "").strip().lower() == estado_norm]
 
     summary = {
         "total": 0,
@@ -94,6 +106,7 @@ def category_website(report_id: int, sample_limit: int = Query(500, ge=1, le=500
                         "expected_prefix": expected,
                         "categoria": cat,
                         "category_prefixes": sorted(prefixes),
+                        "estado_sl": r.estado_sl,
                     })
 
         if product_ok:
@@ -111,6 +124,7 @@ def category_website(report_id: int, sample_limit: int = Query(500, ge=1, le=500
 
     return {
         "mapping": [{"website": w, "prefix": p} for w, p in WEBSITE_PREFIX_MAP.items()],
+        "estado_filter": estado or "",
         "summary": summary,
         "per_website": per_website_out,
         "issues": issues,

@@ -9,12 +9,17 @@ export default function CategoryWebsite() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [websiteFilter, setWebsiteFilter] = useState("");
+  // Estado SL: Visible es el foco principal — los que Magento ya publica.
+  // Draft/Invisible tambien pueden estar mal, pero no tienen impacto inmediato.
+  const [estadoFilter, setEstadoFilter] = useState("");
 
   useEffect(() => {
     if (!currentReportId) return;
     setError(null); setData(null);
-    api.getCategoryWebsite(currentReportId).then(setData).catch((err) => setError(err.message));
-  }, [currentReportId]);
+    api.getCategoryWebsite(currentReportId, { estado: estadoFilter || undefined })
+      .then(setData)
+      .catch((err) => setError(err.message));
+  }, [currentReportId, estadoFilter]);
 
   const filteredIssues = useMemo(() => {
     if (!data) return [];
@@ -42,8 +47,30 @@ export default function CategoryWebsite() {
           <div className="sh-sub">
             {currentReport?.filename} · si un producto tiene el website pero le falta la categoría con ese
             prefijo, Magento lo apaga. Aquí solo se marca ese caso (tener la categoría sin el website es válido).
+            {estadoFilter && (
+              <> · <span style={{ color: "var(--teal)" }}>filtrando por {estadoFilter}</span></>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Filtro por Estado SL — los Visibles son el foco principal */}
+      <div className="fb">
+        <span className="sh-sub">Estado SL:</span>
+        {[
+          { value: "", label: "Todos" },
+          { value: "Visible", label: "Visible (prioridad)" },
+          { value: "Draft", label: "Draft" },
+          { value: "Invisible", label: "Invisible" },
+        ].map((opt) => (
+          <span
+            key={opt.value}
+            className={"chip" + (estadoFilter === opt.value ? " on" : "")}
+            onClick={() => setEstadoFilter(opt.value)}
+          >
+            {opt.label}
+          </span>
+        ))}
       </div>
 
       {/* Mapeo aplicado */}
@@ -126,6 +153,7 @@ export default function CategoryWebsite() {
                 <tr>
                   <th>SKU</th>
                   <th>Nombre</th>
+                  <th>Estado SL</th>
                   <th>Website</th>
                   <th>Categoría que falta</th>
                   <th>Categoría actual</th>
@@ -136,6 +164,11 @@ export default function CategoryWebsite() {
                   <tr key={it.sku + it.website}>
                     <td>{it.sku || "—"}</td>
                     <td title={it.nombre}>{it.nombre || "—"}</td>
+                    <td>
+                      {it.estado_sl === "Visible"
+                        ? <span className="bdg ms">{it.estado_sl}</span>
+                        : (it.estado_sl || "—")}
+                    </td>
                     <td>{it.website}</td>
                     <td><span className="bdg ms">falta {it.expected_prefix}</span></td>
                     <td title={it.categoria}>{it.categoria || <span className="diff-rem">(sin categoría)</span>}</td>
