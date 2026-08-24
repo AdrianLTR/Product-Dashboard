@@ -49,7 +49,6 @@ def apply_dashboard_filters(
     etiqueta: str | None = None,
 ) -> list[Product]:
     web_f = csv_list(website)
-    cat_f = csv_list(categoria)
     dep_f = csv_list(departamento)
     # Varias etiquetas seleccionadas = OR (productos con cualquiera de ellas)
     etq_f = csv_list(etiqueta)
@@ -57,9 +56,10 @@ def apply_dashboard_filters(
     formato_q = (formato or "").strip().lower()
     sku_q = (sku or "").strip().lower()
     nombre_q = (nombre or "").strip().lower()
-    # marca y familia son busqueda por texto (contiene), no seleccion exacta
+    # marca, familia y categoria son busqueda por texto (contiene)
     marca_q = (marca or "").strip().lower()
     familia_q = (familia or "").strip().lower()
+    categoria_q = (categoria or "").strip().lower()
     # skus: listado exacto pegado por el usuario (comparar un listado contra el reporte)
     sku_set = {s.lower() for s in parse_sku_list(skus)}
 
@@ -81,7 +81,7 @@ def apply_dashboard_filters(
             ws = stores_of(r.website)
             if not any(w in ws for w in web_f):
                 continue
-        if cat_f and (r.categoria_ecommerce or "").strip() not in cat_f:
+        if categoria_q and categoria_q not in (r.categoria_ecommerce or "").lower():
             continue
         if dep_f and r.departamento not in dep_f:
             continue

@@ -29,7 +29,7 @@ export default function Dashboard() {
   const { currentReportId } = useReports();
   const {
     chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
-    nombre, setNombre, marca, setMarca, familia, setFamilia,
+    nombre, setNombre, marca, setMarca, familia, setFamilia, categoria, setCategoria,
     kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList,
     etiquetas, toggleEtiqueta, setEtiquetas, reset, asQuery,
   } = useFilters();
@@ -44,24 +44,26 @@ export default function Dashboard() {
   // Los inputs se manejan en estado local (draft) y solo se aplican al
   // contexto de filtros con Enter o el boton Aplicar. Evita disparar una
   // peticion por cada tecla y saturar al backend.
-  const [draft, setDraft] = useState({ sku, nombre, marca, familia, formato });
+  const [draft, setDraft] = useState({ sku, nombre, marca, familia, categoria, formato });
   useEffect(() => {
-    setDraft({ sku, nombre, marca, familia, formato });
-  }, [sku, nombre, marca, familia, formato]);
+    setDraft({ sku, nombre, marca, familia, categoria, formato });
+  }, [sku, nombre, marca, familia, categoria, formato]);
   const hasPendingChanges = useMemo(
     () =>
       draft.sku !== sku ||
       draft.nombre !== nombre ||
       draft.marca !== marca ||
       draft.familia !== familia ||
+      draft.categoria !== categoria ||
       draft.formato !== formato,
-    [draft, sku, nombre, marca, familia, formato]
+    [draft, sku, nombre, marca, familia, categoria, formato]
   );
   function applyDraft() {
     setSku(draft.sku);
     setNombre(draft.nombre);
     setMarca(draft.marca);
     setFamilia(draft.familia);
+    setCategoria(draft.categoria);
     setFormato(draft.formato);
   }
 
@@ -167,6 +169,7 @@ export default function Dashboard() {
         <input type="text" placeholder="Buscar nombre…" value={draft.nombre} onChange={(e) => setDraft({ ...draft, nombre: e.target.value })} />
         <input type="text" placeholder="Buscar marca…" value={draft.marca} onChange={(e) => setDraft({ ...draft, marca: e.target.value })} />
         <input type="text" placeholder="Buscar familia…" value={draft.familia} onChange={(e) => setDraft({ ...draft, familia: e.target.value })} />
+        <input type="text" placeholder="Buscar categoría eComm…" value={draft.categoria} onChange={(e) => setDraft({ ...draft, categoria: e.target.value })} />
         <input type="text" placeholder="Buscar formato…" value={draft.formato} onChange={(e) => setDraft({ ...draft, formato: e.target.value })} />
         <select
           value=""
