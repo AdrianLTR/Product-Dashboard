@@ -3,6 +3,40 @@ import { api } from "../api";
 import FotoCell from "./FotoCell";
 import { reportDate } from "../dates";
 
+// Columnas exportadas al CSV (mismo orden que la tabla del modal)
+const CSV_COLS = [
+  ["sku", "SKU"],
+  ["nombre", "Nombre"],
+  ["departamento", "Departamento"],
+  ["descripcion_sap", "Descripcion SAP"],
+  ["estado_sl", "Estado SL"],
+  ["etiquetas_sl", "Etiquetas SL"],
+  ["foto_descriptiva_sl", "Foto descriptiva SL"],
+  ["website", "Website"],
+  ["es_sku_nuevo", "SKU Nuevo"],
+];
+
+function csvCell(v) {
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[",\n\r;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function downloadCsv(rows, tab, label, website) {
+  const header = CSV_COLS.map(([, h]) => h).join(",");
+  const lines = rows.map((r) => CSV_COLS.map(([k]) => csvCell(r[k])).join(","));
+  // BOM para que Excel abra utf-8 con tildes bien
+  const csv = "﻿" + [header, ...lines].join("\r\n");
+  const slug = (label + "_" + tab + (website ? "_" + website : "")).replace(/[^\w-]+/g, "_");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Delta_${slug}_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Modal que explica un delta del Resumen Ejecutivo: que SKUs ENTRARON al
 // indicador y cuales SALIERON entre los dos reportes comparados.
 export default function DeltaModal({ reportId, indicator, label, website, compareId, onClose }) {
@@ -55,7 +89,12 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
               )}
             </div>
           </div>
-          <div className="ml">
+          <div className="ml fb">
+            {data && rows.length > 0 && (
+              <button className="btn" onClick={() => downloadCsv(rows, tab, label, website)}>
+                ↓ Exportar CSV
+              </button>
+            )}
             <button className="modal-x" onClick={onClose}>×</button>
           </div>
         </div>
