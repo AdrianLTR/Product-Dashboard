@@ -13,9 +13,21 @@ const CSV_COLS = [
   ["etiquetas_sl", "Etiquetas SL"],
   ["foto_descriptiva_sl", "Foto descriptiva SL"],
   ["website", "Website"],
+  ["motivo", "Motivo"],
   ["es_sku_nuevo", "SKU Nuevo"],
   ["es_foto_nueva", "Foto Nueva"],
 ];
+
+// Etiqueta y clase visible para el motivo del cambio. Aclaramos que un SKU
+// puede "salir" de un indicador por 3 razones distintas para que no se
+// confundan con un cambio de dato real.
+const MOTIVO_LABELS = {
+  salio_catalogo: { label: "Salio del catalogo", cls: "cr" },
+  perdio_website: { label: "Perdio el website", cls: "ne" },
+  cambio_atributo: { label: "Cambio de dato", cls: "ms" },
+  nuevo_catalogo: { label: "SKU nuevo", cls: "ok" },
+  gano_website: { label: "Gano el website", cls: "ne" },
+};
 
 function csvCell(v) {
   const s = v === null || v === undefined ? "" : String(v);
@@ -142,6 +154,7 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
                       <th>Etiquetas SL</th>
                       <th>Foto</th>
                       <th>Website</th>
+                      <th>Motivo</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -163,6 +176,13 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
                         <td title={p.etiquetas_sl}>{p.etiquetas_sl || "—"}</td>
                         <td><FotoCell value={p.foto_descriptiva_sl} /></td>
                         <td title={p.website}>{p.website || "—"}</td>
+                        <td>
+                          {p.motivo && MOTIVO_LABELS[p.motivo] ? (
+                            <span className={"bdg " + MOTIVO_LABELS[p.motivo].cls}>
+                              {MOTIVO_LABELS[p.motivo].label}
+                            </span>
+                          ) : "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

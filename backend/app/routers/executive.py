@@ -168,7 +168,12 @@ _INDICATOR_PREDICATES = {
 _CROSS_INDICATORS = {"entrantes", "salientes", "foto_nueva"}
 
 
-def _row(sku: str, source: dict[str, Product], prev_idx: dict[str, Product] | None = None) -> dict:
+def _row(
+    sku: str,
+    source: dict[str, Product],
+    prev_idx: dict[str, Product] | None = None,
+    motivo: str | None = None,
+) -> dict:
     r = source[sku]
     es_foto_nueva = False
     if prev_idx and sku in prev_idx:
@@ -188,7 +193,40 @@ def _row(sku: str, source: dict[str, Product], prev_idx: dict[str, Product] | No
         "website": r.website,
         "es_sku_nuevo": prev_idx is not None and sku not in prev_idx,
         "es_foto_nueva": es_foto_nueva,
+        "motivo": motivo,
     }
+
+
+def _motivo_salio(sku: str, prev_row: Product, cur_all: dict[str, Product], website: str | None) -> str:
+    """Explica por que un SKU salio de un indicador entre reportes.
+
+    - salio_catalogo: el SKU ya no esta en el reporte nuevo (fue removido).
+    - perdio_website: sigue en el catalogo pero le quitaron el website en el
+      que estamos viendo el indicador (por eso "sale" del conteo aunque no
+      cambio el atributo del indicador).
+    - cambio_atributo: sigue en el catalogo y en el mismo website, pero el
+      campo del indicador cambio (ej. perdio el precio de verdad).
+    """
+    if sku not in cur_all:
+        return "salio_catalogo"
+    if website and website not in stores_of(cur_all[sku].website):
+        return "perdio_website"
+    return "cambio_atributo"
+
+
+def _motivo_entro(sku: str, cur_row: Product, prev_all: dict[str, Product], website: str | None) -> str:
+    """Explica por que un SKU entro a un indicador entre reportes.
+
+    - nuevo_catalogo: el SKU es nuevo, no estaba en el reporte anterior.
+    - gano_website: ya existia pero antes no tenia este website asignado.
+    - cambio_atributo: ya existia y ya tenia el website, pero ahora cumple
+      el indicador (ej. le pusieron precio).
+    """
+    if sku not in prev_all:
+        return "nuevo_catalogo"
+    if website and website not in stores_of(prev_all[sku].website):
+        return "gano_website"
+    return "cambio_atributo"
 
 
 @router.get("/{report_id}/executive-delta")
@@ -209,12 +247,20 @@ def executive_delta(
 
     prev_meta = _resolve_previous(report_id, compare_id)
 
-    cur_rows = _filter_by_skus(get_report_products(report_id), skus)
-    prev_rows = _filter_by_skus(get_report_products(prev_meta["id"]), skus) if prev_meta else []
+    cur_rows_all = _filter_by_skus(get_report_products(report_id), skus)
+    prev_rows_all = _filter_by_skus(get_report_products(prev_meta["id"]), skus) if prev_meta else []
+
+    # Indices sin filtrar por website: nos permiten saber si un SKU sigue en
+    # el catalogo o si perdio el website (para explicar el motivo del cambio).
+    cur_idx_all = _as_dict(cur_rows_all)
+    prev_idx_all = _as_dict(prev_rows_all)
 
     if website:
-        cur_rows = [r for r in cur_rows if website in stores_of(r.website)]
-        prev_rows = [r for r in prev_rows if website in stores_of(r.website)]
+        cur_rows = [r for r in cur_rows_all if website in stores_of(r.website)]
+        prev_rows = [r for r in prev_rows_all if website in stores_of(r.website)]
+    else:
+        cur_rows = cur_rows_all
+        prev_rows = prev_rows_all
 
     cur_idx = _as_dict(cur_rows)
     prev_idx = _as_dict(prev_rows)
@@ -284,6 +330,12 @@ def executive_delta(
         "delta": len(cur_in) - len(prev_in),
         "entraron_count": len(entraron),
         "salieron_count": len(salieron),
-        "entraron": [_row(s, cur_idx, prev_idx) for s in entraron[:limit]],
-        "salieron": [_row(s, prev_idx, None) for s in salieron[:limit]],
+        "entraron": [
+            _row(s, cur_idx, prev_idx_all, motivo=_motivo_entro(s, cur_idx[s], prev_idx_all, website))
+            for s in entraron[:limit]
+        ],
+        "salieron": [
+            _row(s, prev_idx, None, motivo=_motivo_salio(s, prev_idx[s], cur_idx_all, website))
+            for s in salieron[:limit]
+        ],
     }
