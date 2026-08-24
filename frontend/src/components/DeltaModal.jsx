@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import FotoCell from "./FotoCell";
 import { reportDate } from "../dates";
@@ -29,6 +29,12 @@ const MOTIVO_LABELS = {
   gano_website: { label: "Gano el website", cls: "ne" },
 };
 
+// Motivos posibles en cada tab, en el orden en el que se muestran los chips
+const MOTIVOS_POR_TAB = {
+  entraron: ["cambio_atributo", "gano_website", "nuevo_catalogo"],
+  salieron: ["cambio_atributo", "perdio_website", "salio_catalogo"],
+};
+
 function csvCell(v) {
   const s = v === null || v === undefined ? "" : String(v);
   return /[",\n\r;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -37,7 +43,6 @@ function csvCell(v) {
 function downloadCsv(rows, tab, label, website) {
   const header = CSV_COLS.map(([, h]) => h).join(",");
   const lines = rows.map((r) => CSV_COLS.map(([k]) => csvCell(r[k])).join(","));
-  // BOM para que Excel abra utf-8 con tildes bien
   const csv = "﻿" + [header, ...lines].join("\r\n");
   const slug = (label + "_" + tab + (website ? "_" + website : "")).replace(/[^\w-]+/g, "_");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -50,12 +55,25 @@ function downloadCsv(rows, tab, label, website) {
   URL.revokeObjectURL(url);
 }
 
+// Cuenta cuantas filas hay por cada motivo (sin filtrar por chip activo,
+// para que el chip muestre el total real y no la seleccion actual).
+function countByMotivo(rows) {
+  const c = {};
+  for (const r of rows) {
+    const m = r.motivo || "sin_motivo";
+    c[m] = (c[m] || 0) + 1;
+  }
+  return c;
+}
+
 // Modal que explica un delta del Resumen Ejecutivo: que SKUs ENTRARON al
 // indicador y cuales SALIERON entre los dos reportes comparados.
 export default function DeltaModal({ reportId, indicator, label, website, compareId, skus, onClose }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("entraron");
+  // Motivo activo para filtrar la tabla. "" = todos.
+  const [motivoFilter, setMotivoFilter] = useState("");
 
   useEffect(() => {
     if (!reportId) return;
@@ -73,7 +91,17 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const rows = data ? (tab === "entraron" ? data.entraron : data.salieron) : [];
+  // Cambiar de tab resetea el chip de motivo (no tiene sentido conservarlo).
+  useEffect(() => { setMotivoFilter(""); }, [tab]);
+
+  const allRows = data ? (tab === "entraron" ? data.entraron : data.salieron) : [];
+  const motivosCount = useMemo(() => countByMotivo(allRows), [allRows]);
+  const rows = useMemo(
+    () => (motivoFilter ? allRows.filter((r) => r.motivo === motivoFilter) : allRows),
+    [allRows, motivoFilter]
+  );
+
+  const motivosDisponibles = MOTIVOS_POR_TAB[tab] || [];
 
   return (
     <div className="modal-ov on" onClick={onClose}>
@@ -137,9 +165,39 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
               </span>
             </div>
 
+            {/* Resumen de motivos: cuantos son cambios reales vs bookkeeping */}
+            {allRows.length > 0 && motivosDisponibles.some((m) => motivosCount[m]) && (
+              <div className="fb" style={{ marginTop: 8, alignItems: "center" }}>
+                <span className="sh-sub">Desglose:</span>
+                <span
+                  className={"chip" + (motivoFilter === "" ? " on" : "")}
+                  onClick={() => setMotivoFilter("")}
+                >
+                  Todos · {allRows.length.toLocaleString()}
+                </span>
+                {motivosDisponibles.map((m) => {
+                  const n = motivosCount[m] || 0;
+                  if (!n) return null;
+                  const info = MOTIVO_LABELS[m];
+                  return (
+                    <span
+                      key={m}
+                      className={"chip" + (motivoFilter === m ? " on" : "")}
+                      onClick={() => setMotivoFilter(motivoFilter === m ? "" : m)}
+                      title={`Filtrar solo los que ${info.label.toLowerCase()}`}
+                    >
+                      {info.label} · {n.toLocaleString()}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
             {rows.length === 0 ? (
               <div className="embedded-empty">
-                {tab === "entraron" ? "Ninguno entró." : "Ninguno salió."}
+                {motivoFilter
+                  ? `Ninguno con motivo "${MOTIVO_LABELS[motivoFilter]?.label}".`
+                  : tab === "entraron" ? "Ninguno entró." : "Ninguno salió."}
               </div>
             ) : (
               <div className="embedded-table" style={{ maxHeight: "58vh" }}>
