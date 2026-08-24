@@ -89,7 +89,7 @@ export default function Compare() {
           <div className="sh" style={{ marginBottom: 8 }}>
             <div className="sh-t">
               <div className="sh-title" style={{ fontSize: 13 }}>Filtrar comparacion por listado de SKUs</div>
-              <div className="sh-sub">Pega los SKUs (uno por linea, o separados por coma/espacio). La comparacion solo mostrara esos productos.</div>
+              <div className="sh-sub">Pega los SKUs (uno por linea, o separados por coma/espacio). Solo esos SKUs se comparan entre el reporte base y el reporte nuevo.</div>
             </div>
           </div>
           <textarea

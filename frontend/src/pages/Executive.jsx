@@ -29,8 +29,8 @@ const DELTA_INDICATORS = {
   "Sin Familia": "sin_familia",
   "Sin Nombre": "sin_nombre",
   "Sin Cat": "sin_categoria",
-  "Entrantes": "entrantes",
-  "Salientes": "salientes",
+  "Entraron": "entrantes",
+  "Salieron": "salientes",
   "Foto Nueva": "foto_nueva",
 };
 
@@ -145,13 +145,13 @@ function StoreCard({ store, hasPrev, onDrill, onDelta }) {
       {hasPrev && (store.entrantes > 0 || store.salientes > 0 || store.foto_nueva > 0) && (
         <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
           {store.entrantes > 0 && (
-            <span className="bdg ok" style={{ cursor: "pointer" }} onClick={() => onDelta("Entrantes", store.name)}>
-              +{store.entrantes.toLocaleString()} entrantes
+            <span className="bdg ok" style={{ cursor: "pointer" }} onClick={() => onDelta("Entraron", store.name)}>
+              +{store.entrantes.toLocaleString()} entraron
             </span>
           )}
           {store.salientes > 0 && (
-            <span className="bdg ms" style={{ cursor: "pointer" }} onClick={() => onDelta("Salientes", store.name)}>
-              -{store.salientes.toLocaleString()} salientes
+            <span className="bdg ms" style={{ cursor: "pointer" }} onClick={() => onDelta("Salieron", store.name)}>
+              -{store.salientes.toLocaleString()} salieron
             </span>
           )}
           {store.foto_nueva > 0 && (
@@ -283,7 +283,7 @@ export default function Executive() {
           <div className="sh" style={{ marginBottom: 8 }}>
             <div className="sh-t">
               <div className="sh-title" style={{ fontSize: 13 }}>Filtrar resumen por listado de SKUs</div>
-              <div className="sh-sub">Pega los SKUs (uno por linea, o separados por coma/espacio). Se aplica a todo el resumen.</div>
+              <div className="sh-sub">Pega los SKUs (uno por linea, o separados por coma/espacio). El resumen y los deltas se calculan solo con esos SKUs — cada uno se compara contra su version en el reporte anterior.</div>
             </div>
           </div>
           <textarea
@@ -344,31 +344,30 @@ export default function Executive() {
           <KpiTile label="Con Precio" value={g.con_precio} delta={gd.con_precio} onClick={() => openDrill("Con Precio", null)} onDeltaClick={hasPrev ? () => openDelta("Con Precio", null) : undefined} />
           <KpiTile label="Sin Foto" value={g.sin_foto} delta={gd.sin_foto} higherIsBetter={false} onClick={() => openDrill("Sin Foto", null)} onDeltaClick={hasPrev ? () => openDelta("Sin Foto", null) : undefined} />
           <KpiTile label="Sin Familia" value={g.sin_familia} delta={gd.sin_familia} higherIsBetter={false} onClick={() => openDrill("Sin Familia", null)} onDeltaClick={hasPrev ? () => openDelta("Sin Familia", null) : undefined} />
+          {hasPrev && (
+            <>
+              <KpiTile
+                label="Entraron"
+                value={g.entrantes ?? 0}
+                delta={null}
+                onClick={() => openDelta("Entraron", null)}
+              />
+              <KpiTile
+                label="Salieron"
+                value={g.salientes ?? 0}
+                delta={null}
+                higherIsBetter={false}
+                onClick={() => openDelta("Salieron", null)}
+              />
+              <KpiTile
+                label="Foto Nueva"
+                value={g.foto_nueva ?? 0}
+                delta={null}
+                onClick={() => openDelta("Foto Nueva", null)}
+              />
+            </>
+          )}
         </div>
-
-        {hasPrev && (
-          <div className="kpi-row" style={{ marginTop: 8 }}>
-            <KpiTile
-              label="Entrantes"
-              value={g.entrantes ?? 0}
-              delta={null}
-              onClick={() => openDelta("Entrantes", null)}
-            />
-            <KpiTile
-              label="Salientes"
-              value={g.salientes ?? 0}
-              delta={null}
-              higherIsBetter={false}
-              onClick={() => openDelta("Salientes", null)}
-            />
-            <KpiTile
-              label="Foto Nueva"
-              value={g.foto_nueva ?? 0}
-              delta={null}
-              onClick={() => openDelta("Foto Nueva", null)}
-            />
-          </div>
-        )}
       </div>
 
       {/* Cards por website */}
