@@ -19,6 +19,8 @@ def list_products(
     estado: str | None = Query(None),
     formato: str | None = Query(None),
     familia: str | None = Query(None),
+    sku: str | None = Query(None),
+    nombre: str | None = Query(None),
     skus: str | None = Query(None),
     departamento: str | None = Query(None),
     etiqueta: str | None = Query(None),
@@ -31,8 +33,8 @@ def list_products(
     rows = get_report_products(report_id)
     rows = apply_dashboard_filters(
         rows, website=website, marca=marca, categoria=categoria, estado=estado,
-        formato=formato, familia=familia, skus=skus, departamento=departamento,
-        etiqueta=etiqueta,
+        formato=formato, familia=familia, sku=sku, nombre=nombre, skus=skus,
+        departamento=departamento, etiqueta=etiqueta,
     )
     rows = apply_kpi_type_filter(rows, kpi_types or kpi_type, search)
 

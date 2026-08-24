@@ -71,6 +71,13 @@ export default function CategoryWebsite() {
             {opt.label}
           </span>
         ))}
+        <a
+          className="btn"
+          style={{ marginLeft: "auto" }}
+          href={api.exportCategoryWebsiteUrl(currentReportId, { estado: estadoFilter || undefined })}
+        >
+          ↓ Exportar Excel
+        </a>
       </div>
 
       {/* Mapeo aplicado */}

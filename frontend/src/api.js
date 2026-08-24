@@ -107,4 +107,6 @@ export const api = {
   exportProductsUrl: (reportId, params) => `${BASE}/export/products/${reportId}${qs(params)}`,
   exportStoresUrl: (reportId) => `${BASE}/export/stores/${reportId}`,
   exportCompareUrl: (baseId, targetId) => `${BASE}/export/compare${qs({ base_id: baseId, target_id: targetId })}`,
+  exportCategoryWebsiteUrl: (reportId, params) =>
+    `${BASE}/reports/${reportId}/category-website/export${qs(params)}`,
 };
