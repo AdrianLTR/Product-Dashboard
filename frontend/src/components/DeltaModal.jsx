@@ -14,6 +14,7 @@ const CSV_COLS = [
   ["foto_descriptiva_sl", "Foto descriptiva SL"],
   ["website", "Website"],
   ["es_sku_nuevo", "SKU Nuevo"],
+  ["es_foto_nueva", "Foto Nueva"],
 ];
 
 function csvCell(v) {
@@ -39,7 +40,7 @@ function downloadCsv(rows, tab, label, website) {
 
 // Modal que explica un delta del Resumen Ejecutivo: que SKUs ENTRARON al
 // indicador y cuales SALIERON entre los dos reportes comparados.
-export default function DeltaModal({ reportId, indicator, label, website, compareId, onClose }) {
+export default function DeltaModal({ reportId, indicator, label, website, compareId, skus, onClose }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("entraron");
@@ -49,10 +50,10 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
     setError(null);
     setData(null);
     api
-      .getExecutiveDelta(reportId, { indicator, website, compare_id: compareId })
+      .getExecutiveDelta(reportId, { indicator, website, compare_id: compareId, skus })
       .then(setData)
       .catch((err) => setError(err.message));
-  }, [reportId, indicator, website, compareId]);
+  }, [reportId, indicator, website, compareId, skus]);
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -150,6 +151,9 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
                           {p.sku}
                           {tab === "entraron" && p.es_sku_nuevo && (
                             <span className="bdg ok" style={{ marginLeft: 6 }}>nuevo</span>
+                          )}
+                          {tab === "entraron" && p.es_foto_nueva && (
+                            <span className="bdg" style={{ marginLeft: 6, background: "var(--teal)", color: "#fff" }}>foto nueva</span>
                           )}
                         </td>
                         <td title={p.nombre}>{p.nombre || "—"}</td>

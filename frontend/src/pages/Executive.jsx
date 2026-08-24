@@ -5,8 +5,6 @@ import DrillModal from "../components/DrillModal";
 import { reportDate as fmtReportDate, reportSortValue } from "../dates";
 import { useReports } from "../context/ReportContext";
 
-// Mapea la etiqueta de un indicador a los filtros de producto que lo definen,
-// para poder abrir el detalle ("ver los Sin Familia de JUMBO").
 const DRILL_PARAMS = {
   "Total SKU": {},
   "Visibles": { estado: "Visible" },
@@ -20,7 +18,6 @@ const DRILL_PARAMS = {
   "Sin Cat": { kpi_types: "no-cat" },
 };
 
-// Label del indicador -> nombre que espera /executive-delta
 const DELTA_INDICATORS = {
   "Total SKU": "total",
   "Visibles": "visibles",
@@ -32,6 +29,9 @@ const DELTA_INDICATORS = {
   "Sin Familia": "sin_familia",
   "Sin Nombre": "sin_nombre",
   "Sin Cat": "sin_categoria",
+  "Entrantes": "entrantes",
+  "Salientes": "salientes",
+  "Foto Nueva": "foto_nueva",
 };
 
 function scoreColor(score) {
@@ -40,7 +40,6 @@ function scoreColor(score) {
   return "var(--red)";
 }
 
-// Formato del delta: +N / -N. Numero con signo, sin nada si es 0.
 function fmtDelta(v, opts = {}) {
   if (v === null || v === undefined) return null;
   const { decimals = 0 } = opts;
@@ -49,7 +48,6 @@ function fmtDelta(v, opts = {}) {
   return rounded;
 }
 
-// Devuelve className y flecha para la tendencia del delta.
 function trendClass(v, higherIsBetter = true) {
   if (v === null || v === undefined || v === 0) return "flat";
   const good = higherIsBetter ? v > 0 : v < 0;
@@ -60,8 +58,6 @@ function trendArrow(v) {
   return v > 0 ? "▲" : "▼";
 }
 
-// Renderiza un "kpi tile" con valor grande y delta abajo si hay reporte previo.
-// El valor abre el detalle actual; el delta abre "quienes entraron/salieron".
 function KpiTile({ label, value, delta, higherIsBetter = true, decimals = 0, format = (v) => v.toLocaleString(), onClick, onDeltaClick }) {
   const tc = trendClass(delta, higherIsBetter);
   return (
@@ -93,7 +89,6 @@ function StoreCard({ store, hasPrev, onDrill, onDelta }) {
   const deltaFor = (label) => (hasPrev ? () => onDelta(label, store.name) : undefined);
   const d = store.delta || {};
   const kpiTrend = trendClass(d.kpi_score);
-  // Badge de pendiente clickeable: abre el detalle de ese indicador en esta tienda
   const pend = (label, count, delta) =>
     count > 0 ? (
       <span
@@ -147,6 +142,26 @@ function StoreCard({ store, hasPrev, onDrill, onDelta }) {
         />
       </div>
 
+      {hasPrev && (store.entrantes > 0 || store.salientes > 0 || store.foto_nueva > 0) && (
+        <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {store.entrantes > 0 && (
+            <span className="bdg ok" style={{ cursor: "pointer" }} onClick={() => onDelta("Entrantes", store.name)}>
+              +{store.entrantes.toLocaleString()} entrantes
+            </span>
+          )}
+          {store.salientes > 0 && (
+            <span className="bdg ms" style={{ cursor: "pointer" }} onClick={() => onDelta("Salientes", store.name)}>
+              -{store.salientes.toLocaleString()} salientes
+            </span>
+          )}
+          {store.foto_nueva > 0 && (
+            <span className="bdg" style={{ cursor: "pointer", background: "var(--teal)", color: "#fff" }} onClick={() => onDelta("Foto Nueva", store.name)}>
+              {store.foto_nueva.toLocaleString()} foto nueva
+            </span>
+          )}
+        </div>
+      )}
+
       <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
         {pend("Sin Familia", store.sin_familia, d.sin_familia)}
         {pend("Sin Foto", store.sin_foto, d.sin_foto)}
@@ -166,19 +181,20 @@ export default function Executive() {
   const [error, setError] = useState(null);
   const [storeFilter, setStoreFilter] = useState("");
 
-  // Reportes elegibles, ordenados por fecha del reporte (mas nuevo primero)
   const sorted = useMemo(
     () => [...reports].sort((a, b) => reportSortValue(b).localeCompare(reportSortValue(a))),
     [reports]
   );
 
-  // Reporte a analizar (default: el activo) y contra cual comparar
-  // ("" = automatico, el inmediatamente anterior por fecha).
   const [reportId, setReportId] = useState(currentReportId);
   const [compareId, setCompareId] = useState("");
 
+  // SKU paste
+  const [skuDraft, setSkuDraft] = useState("");
+  const [skuList, setSkuList] = useState("");
+  const [showSkuPanel, setShowSkuPanel] = useState(false);
+
   useEffect(() => {
-    // Si cambia el reporte activo global, seguirlo por defecto
     setReportId(currentReportId);
   }, [currentReportId]);
 
@@ -187,10 +203,10 @@ export default function Executive() {
     setError(null);
     setData(null);
     api
-      .getExecutive(reportId, compareId || undefined)
+      .getExecutive(reportId, compareId || undefined, skuList.trim() || undefined)
       .then(setData)
       .catch((err) => setError(err.message));
-  }, [reportId, compareId]);
+  }, [reportId, compareId, skuList]);
 
   const visibleStores = useMemo(() => {
     if (!data) return [];
@@ -199,10 +215,8 @@ export default function Executive() {
     return data.stores.filter((s) => s.name.toLowerCase().includes(q));
   }, [data, storeFilter]);
 
-  // Detalle (drill-down) de un indicador: {label, website} o null
   const [drill, setDrill] = useState(null);
   const openDrill = (label, website) => setDrill({ label, website });
-  // Detalle del cambio (delta): que SKUs entraron/salieron del indicador
   const [delta, setDelta] = useState(null);
   const openDelta = (label, website) => setDelta({ label, website });
 
@@ -235,6 +249,7 @@ export default function Executive() {
                 {data.previous
                   ? <> · vs {data.previous.filename}</>
                   : <> · no hay reporte de comparación, no hay deltas</>}
+                {skuList.trim() && <> · <span style={{ color: "var(--teal)" }}>filtrado por listado de SKUs</span></>}
               </>
             ) : (
               "Cargando…"
@@ -253,9 +268,36 @@ export default function Executive() {
               <option key={r.id} value={r.id}>vs {r.filename} ({fmtReportDate(r)})</option>
             ))}
           </select>
-          <button className="btn" onClick={() => window.print()}>🖨 Imprimir / PDF</button>
+          <button
+            className={"btn" + (skuList.trim() ? " pri" : "")}
+            onClick={() => setShowSkuPanel((v) => !v)}
+          >
+            {skuList.trim() ? "Listado activo" : "Pegar SKUs"}
+          </button>
+          <button className="btn" onClick={() => window.print()}>Imprimir / PDF</button>
         </div>
       </div>
+
+      {showSkuPanel && (
+        <div className="cc no-print" style={{ padding: "12px 14px" }}>
+          <div className="sh" style={{ marginBottom: 8 }}>
+            <div className="sh-t">
+              <div className="sh-title" style={{ fontSize: 13 }}>Filtrar resumen por listado de SKUs</div>
+              <div className="sh-sub">Pega los SKUs (uno por linea, o separados por coma/espacio). Se aplica a todo el resumen.</div>
+            </div>
+          </div>
+          <textarea
+            value={skuDraft}
+            onChange={(e) => setSkuDraft(e.target.value)}
+            placeholder={"SKU001\nSKU002\nSKU003…"}
+            style={{ width: "100%", minHeight: 90, background: "var(--sur)", border: "1px solid var(--b2)", borderRadius: 6, color: "var(--tx)", fontFamily: "var(--mono)", fontSize: 12, padding: 8, resize: "vertical" }}
+          />
+          <div className="fb" style={{ marginTop: 8 }}>
+            <button className="btn pri" onClick={() => setSkuList(skuDraft)}>Aplicar listado</button>
+            <button className="btn" onClick={() => { setSkuDraft(""); setSkuList(""); }}>Quitar listado</button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="emp">{error}</div>}
       {!data && !error && <div className="emp">Cargando…</div>}
@@ -265,7 +307,6 @@ export default function Executive() {
       const gd = g.delta || {};
       return (
       <>
-
 
       {/* Hero global */}
       <div className="exec-hero">
@@ -304,6 +345,30 @@ export default function Executive() {
           <KpiTile label="Sin Foto" value={g.sin_foto} delta={gd.sin_foto} higherIsBetter={false} onClick={() => openDrill("Sin Foto", null)} onDeltaClick={hasPrev ? () => openDelta("Sin Foto", null) : undefined} />
           <KpiTile label="Sin Familia" value={g.sin_familia} delta={gd.sin_familia} higherIsBetter={false} onClick={() => openDrill("Sin Familia", null)} onDeltaClick={hasPrev ? () => openDelta("Sin Familia", null) : undefined} />
         </div>
+
+        {hasPrev && (
+          <div className="kpi-row" style={{ marginTop: 8 }}>
+            <KpiTile
+              label="Entrantes"
+              value={g.entrantes ?? 0}
+              delta={null}
+              onClick={() => openDelta("Entrantes", null)}
+            />
+            <KpiTile
+              label="Salientes"
+              value={g.salientes ?? 0}
+              delta={null}
+              higherIsBetter={false}
+              onClick={() => openDelta("Salientes", null)}
+            />
+            <KpiTile
+              label="Foto Nueva"
+              value={g.foto_nueva ?? 0}
+              delta={null}
+              onClick={() => openDelta("Foto Nueva", null)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Cards por website */}
@@ -347,6 +412,7 @@ export default function Executive() {
           label={delta.label}
           website={delta.website}
           compareId={compareId || undefined}
+          skus={skuList.trim() || undefined}
           onClose={() => setDelta(null)}
         />
       )}

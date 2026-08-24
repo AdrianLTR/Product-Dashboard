@@ -3,9 +3,9 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useReports } from "../context/ReportContext";
 
 const NAV = [
-  { to: "/upload", label: "Cargar Reporte" },
-  { to: "/dashboard", label: "Dashboard" },
   { to: "/executive", label: "Resumen Ejecutivo" },
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/upload", label: "Cargar Reporte" },
   { to: "/stores", label: "Por Website" },
   { to: "/category-website", label: "Categorías × Website" },
   { to: "/compare", label: "Comparar Reportes" },

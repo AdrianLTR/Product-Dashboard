@@ -21,7 +21,7 @@ export default function App() {
           <HashRouter>
             <Routes>
               <Route element={<Layout />}>
-                <Route index element={<Navigate to="/upload" replace />} />
+                <Route index element={<Navigate to="/executive" replace />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/executive" element={<Executive />} />

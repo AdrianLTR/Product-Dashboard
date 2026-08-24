@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
-from ..filters import get_report_products
+from ..filters import get_report_products, parse_sku_list
 from ..product import Product
 from ..utils import has_price, is_empty
 
@@ -53,6 +53,7 @@ def compare_reports(
     base_id: int = Query(..., description="Reporte anterior (baseline)"),
     target_id: int = Query(..., description="Reporte nuevo a comparar"),
     changes_limit: int = Query(200, ge=1, le=2000),
+    skus: str | None = Query(None, description="Lista de SKUs para filtrar"),
 ):
     base_report = storage.get_report_meta(base_id)
     target_report = storage.get_report_meta(target_id)
@@ -61,6 +62,10 @@ def compare_reports(
 
     base_rows = get_report_products(base_id)
     target_rows = get_report_products(target_id)
+    sku_filter = {s.lower() for s in parse_sku_list(skus)}
+    if sku_filter:
+        base_rows = [r for r in base_rows if (r.sku or "").strip().lower() in sku_filter]
+        target_rows = [r for r in target_rows if (r.sku or "").strip().lower() in sku_filter]
     base_idx = _index_by_sku(base_rows)
     target_idx = _index_by_sku(target_rows)
 

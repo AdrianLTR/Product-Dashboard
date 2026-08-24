@@ -10,8 +10,6 @@ export default function Compare() {
     () => [...reports].sort((a, b) => reportSortValue(a).localeCompare(reportSortValue(b))),
     [reports]
   );
-  // baseId/targetId viven en ReportContext para que la seleccion persista al
-  // navegar a otra pestana y volver.
   const baseId = compareBaseId;
   const targetId = compareTargetId;
   const setBaseId = setCompareBaseId;
@@ -19,10 +17,13 @@ export default function Compare() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
+  // SKU paste
+  const [skuDraft, setSkuDraft] = useState("");
+  const [skuList, setSkuList] = useState("");
+  const [showSkuPanel, setShowSkuPanel] = useState(false);
+
   useEffect(() => {
     if (!sorted.length) return;
-    // Defaults la primera vez, o si la seleccion previa apunta a un reporte
-    // que ya no existe (fue eliminado).
     const exists = (id) => sorted.some((r) => r.id === id);
     if (!targetId || !exists(targetId)) {
       setTargetId(sorted[sorted.length - 1].id);
@@ -42,8 +43,8 @@ export default function Compare() {
     if (!baseId || !targetId) return;
     setError(null);
     setData(null);
-    api.compareReports(baseId, targetId).then(setData).catch((err) => setError(err.message));
-  }, [baseId, targetId]);
+    api.compareReports(baseId, targetId, skuList.trim() || undefined).then(setData).catch((err) => setError(err.message));
+  }, [baseId, targetId, skuList]);
 
   if (reports.length < 2) {
     return <div className="emp">Necesitas al menos dos reportes cargados para comparar. Ve a "Cargar Reporte".</div>;
@@ -54,7 +55,10 @@ export default function Compare() {
       <div className="sh">
         <div className="sh-t">
           <div className="sh-title">Comparar Reportes</div>
-          <div className="sh-sub">Compara el reporte base (anterior) contra el reporte nuevo</div>
+          <div className="sh-sub">
+            Compara el reporte base (anterior) contra el reporte nuevo
+            {skuList.trim() && <> · <span style={{ color: "var(--teal)" }}>filtrado por listado de SKUs</span></>}
+          </div>
         </div>
         <div className="ml fb">
           <select value={baseId ?? ""} onChange={(e) => setBaseId(Number(e.target.value))}>
@@ -67,12 +71,39 @@ export default function Compare() {
               <option key={r.id} value={r.id}>Nuevo: {r.filename} ({reportDate(r)})</option>
             ))}
           </select>
-          <button className="btn" onClick={swapReports} title="Intercambiar base y nuevo">⇄ Invertir</button>
+          <button className="btn" onClick={swapReports} title="Intercambiar base y nuevo">Invertir</button>
+          <button
+            className={"btn" + (skuList.trim() ? " pri" : "")}
+            onClick={() => setShowSkuPanel((v) => !v)}
+          >
+            {skuList.trim() ? "Listado activo" : "Pegar SKUs"}
+          </button>
           {baseId && targetId ? (
-            <a className="btn" href={api.exportCompareUrl(baseId, targetId)}>↓ Exportar Excel</a>
+            <a className="btn" href={api.exportCompareUrl(baseId, targetId)}>Exportar Excel</a>
           ) : null}
         </div>
       </div>
+
+      {showSkuPanel && (
+        <div className="cc no-print" style={{ padding: "12px 14px" }}>
+          <div className="sh" style={{ marginBottom: 8 }}>
+            <div className="sh-t">
+              <div className="sh-title" style={{ fontSize: 13 }}>Filtrar comparacion por listado de SKUs</div>
+              <div className="sh-sub">Pega los SKUs (uno por linea, o separados por coma/espacio). La comparacion solo mostrara esos productos.</div>
+            </div>
+          </div>
+          <textarea
+            value={skuDraft}
+            onChange={(e) => setSkuDraft(e.target.value)}
+            placeholder={"SKU001\nSKU002\nSKU003…"}
+            style={{ width: "100%", minHeight: 90, background: "var(--sur)", border: "1px solid var(--b2)", borderRadius: 6, color: "var(--tx)", fontFamily: "var(--mono)", fontSize: 12, padding: 8, resize: "vertical" }}
+          />
+          <div className="fb" style={{ marginTop: 8 }}>
+            <button className="btn pri" onClick={() => setSkuList(skuDraft)}>Aplicar listado</button>
+            <button className="btn" onClick={() => { setSkuDraft(""); setSkuList(""); }}>Quitar listado</button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="emp">{error}</div>}
       {!data && !error && <div className="emp">Cargando…</div>}

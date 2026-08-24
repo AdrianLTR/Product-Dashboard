@@ -95,10 +95,10 @@ export const api = {
   getDashboard: (reportId, filters) => request(`/reports/${reportId}/dashboard${qs(filters)}`),
   getStores: (reportId) => request(`/reports/${reportId}/stores`),
   getProducts: (reportId, params) => request(`/reports/${reportId}/products${qs(params)}`),
-  compareReports: (baseId, targetId) => request(`/compare${qs({ base_id: baseId, target_id: targetId })}`),
+  compareReports: (baseId, targetId, skus) => request(`/compare${qs({ base_id: baseId, target_id: targetId, skus })}`),
   getTrends: () => request("/trends"),
-  getExecutive: (reportId, compareId) =>
-    request(`/reports/${reportId}/executive${qs({ compare_id: compareId })}`),
+  getExecutive: (reportId, compareId, skus) =>
+    request(`/reports/${reportId}/executive${qs({ compare_id: compareId, skus })}`),
   getCategoryWebsite: (reportId, params) =>
     request(`/reports/${reportId}/category-website${qs(params)}`),
   getExecutiveDelta: (reportId, params) =>
