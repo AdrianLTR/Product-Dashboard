@@ -107,6 +107,14 @@ def executive(
     cur_rows = _filter_by_skus(get_report_products(report_id), skus)
     prev_rows = _filter_by_skus(get_report_products(prev_meta["id"]), skus) if prev_meta else []
 
+    # SKUs que el usuario pego pero no aparecen en ninguno de los dos reportes
+    parsed_skus = parse_sku_list(skus)
+    if parsed_skus:
+        found = {(r.sku or "").strip().lower() for r in cur_rows} | {(r.sku or "").strip().lower() for r in prev_rows}
+        skus_no_encontrados = [s for s in parsed_skus if s.lower() not in found]
+    else:
+        skus_no_encontrados = []
+
     cur_global = _metrics(cur_rows)
     prev_global = _metrics(prev_rows) if prev_meta else None
 
@@ -139,6 +147,7 @@ def executive(
         "previous": prev_meta,
         "global": {**cur_global, **cross, "delta": _deltas(cur_global, prev_global)},
         "stores": stores_out,
+        "skus_no_encontrados": skus_no_encontrados,
     }
 
 

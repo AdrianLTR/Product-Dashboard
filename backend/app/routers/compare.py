@@ -62,10 +62,14 @@ def compare_reports(
 
     base_rows = get_report_products(base_id)
     target_rows = get_report_products(target_id)
-    sku_filter = {s.lower() for s in parse_sku_list(skus)}
+    parsed_skus = parse_sku_list(skus)
+    sku_filter = {s.lower() for s in parsed_skus}
+    skus_no_encontrados: list[str] = []
     if sku_filter:
         base_rows = [r for r in base_rows if (r.sku or "").strip().lower() in sku_filter]
         target_rows = [r for r in target_rows if (r.sku or "").strip().lower() in sku_filter]
+        found = {(r.sku or "").strip().lower() for r in base_rows} | {(r.sku or "").strip().lower() for r in target_rows}
+        skus_no_encontrados = [s for s in parsed_skus if s.lower() not in found]
     base_idx = _index_by_sku(base_rows)
     target_idx = _index_by_sku(target_rows)
 
@@ -135,4 +139,5 @@ def compare_reports(
         "changed": changed[:changes_limit],
         "became_visible": became_visible[:changes_limit],
         "became_invisible": became_invisible[:changes_limit],
+        "skus_no_encontrados": skus_no_encontrados,
     }

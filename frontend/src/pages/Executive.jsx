@@ -142,23 +142,11 @@ function StoreCard({ store, hasPrev, onDrill, onDelta }) {
         />
       </div>
 
-      {hasPrev && (store.entrantes > 0 || store.salientes > 0 || store.foto_nueva > 0) && (
+      {hasPrev && store.foto_nueva > 0 && (
         <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {store.entrantes > 0 && (
-            <span className="bdg ok" style={{ cursor: "pointer" }} onClick={() => onDelta("Entraron", store.name)}>
-              +{store.entrantes.toLocaleString()} entraron
-            </span>
-          )}
-          {store.salientes > 0 && (
-            <span className="bdg ms" style={{ cursor: "pointer" }} onClick={() => onDelta("Salieron", store.name)}>
-              -{store.salientes.toLocaleString()} salieron
-            </span>
-          )}
-          {store.foto_nueva > 0 && (
-            <span className="bdg" style={{ cursor: "pointer", background: "var(--teal)", color: "#fff" }} onClick={() => onDelta("Foto Nueva", store.name)}>
-              {store.foto_nueva.toLocaleString()} foto nueva
-            </span>
-          )}
+          <span className="bdg" style={{ cursor: "pointer", background: "var(--teal)", color: "#fff" }} onClick={() => onDelta("Foto Nueva", store.name)}>
+            {store.foto_nueva.toLocaleString()} foto nueva
+          </span>
         </div>
       )}
 
@@ -301,6 +289,18 @@ export default function Executive() {
 
       {error && <div className="emp">{error}</div>}
       {!data && !error && <div className="emp">Cargando…</div>}
+      {data && data.skus_no_encontrados && data.skus_no_encontrados.length > 0 && (
+        <div className="cc" style={{ borderLeft: "3px solid var(--amb)", padding: "10px 14px" }}>
+          <div className="sh-sub" style={{ color: "var(--amb)", marginBottom: 6 }}>
+            {data.skus_no_encontrados.length} SKU{data.skus_no_encontrados.length === 1 ? "" : "s"} del listado no se encontraron en ninguno de los reportes:
+          </div>
+          <div className="fb">
+            {data.skus_no_encontrados.map((sku) => (
+              <span key={sku} className="chip diff-rem">{sku}</span>
+            ))}
+          </div>
+        </div>
+      )}
       {data && (() => {
       const hasPrev = !!data.previous;
       const g = data.global;
