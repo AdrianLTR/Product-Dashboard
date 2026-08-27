@@ -182,6 +182,27 @@ export default function Executive() {
   const [skuList, setSkuList] = useState("");
   const [showSkuPanel, setShowSkuPanel] = useState(false);
 
+  // Filtros por Departamento (single) y Etiquetas SL (multi, OR)
+  const [departamentoFilter, setDepartamentoFilter] = useState("");
+  const [etiquetasFilter, setEtiquetasFilter] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Opciones cargadas desde el dashboard del reporte actual
+  const [opts, setOpts] = useState({ departamentos: [], etiquetas: [] });
+  useEffect(() => {
+    if (!reportId) return;
+    api.getDashboard(reportId).then((d) => {
+      setOpts({
+        departamentos: (d.departamentos || []).map((x) => x.name).filter(Boolean),
+        etiquetas: d.filters?.etiquetas || [],
+      });
+    }).catch(() => {});
+  }, [reportId]);
+
+  const toggleEtiqueta = (e) => {
+    setEtiquetasFilter((prev) => prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]);
+  };
+
   useEffect(() => {
     setReportId(currentReportId);
   }, [currentReportId]);
@@ -191,10 +212,16 @@ export default function Executive() {
     setError(null);
     setData(null);
     api
-      .getExecutive(reportId, compareId || undefined, skuList.trim() || undefined)
+      .getExecutive(
+        reportId,
+        compareId || undefined,
+        skuList.trim() || undefined,
+        departamentoFilter || undefined,
+        etiquetasFilter.length ? etiquetasFilter.join(",") : undefined,
+      )
       .then(setData)
       .catch((err) => setError(err.message));
-  }, [reportId, compareId, skuList]);
+  }, [reportId, compareId, skuList, departamentoFilter, etiquetasFilter]);
 
   const visibleStores = useMemo(() => {
     if (!data) return [];
@@ -238,6 +265,8 @@ export default function Executive() {
                   ? <> · vs {data.previous.filename}</>
                   : <> · no hay reporte de comparación, no hay deltas</>}
                 {skuList.trim() && <> · <span style={{ color: "var(--teal)" }}>filtrado por listado de SKUs</span></>}
+                {departamentoFilter && <> · <span style={{ color: "var(--teal)" }}>dpto: {departamentoFilter}</span></>}
+                {etiquetasFilter.length > 0 && <> · <span style={{ color: "var(--teal)" }}>etiquetas: {etiquetasFilter.join(", ")}</span></>}
               </>
             ) : (
               "Cargando…"
@@ -257,6 +286,14 @@ export default function Executive() {
             ))}
           </select>
           <button
+            className={"btn" + ((departamentoFilter || etiquetasFilter.length) ? " pri" : "")}
+            onClick={() => setShowFilters((v) => !v)}
+          >
+            {(departamentoFilter || etiquetasFilter.length)
+              ? `Filtros (${(departamentoFilter ? 1 : 0) + etiquetasFilter.length})`
+              : "Filtros"}
+          </button>
+          <button
             className={"btn" + (skuList.trim() ? " pri" : "")}
             onClick={() => setShowSkuPanel((v) => !v)}
           >
@@ -265,6 +302,51 @@ export default function Executive() {
           <button className="btn" onClick={() => window.print()}>Imprimir / PDF</button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="cc no-print" style={{ padding: "12px 14px" }}>
+          <div className="sh" style={{ marginBottom: 8 }}>
+            <div className="sh-t">
+              <div className="sh-title" style={{ fontSize: 13 }}>Filtrar resumen por Departamento y Etiquetas</div>
+              <div className="sh-sub">Se aplican al reporte actual y al de comparacion, para que los deltas midan lo mismo en ambos lados.</div>
+            </div>
+          </div>
+          <div className="fb" style={{ marginBottom: 10, gap: 8, alignItems: "center" }}>
+            <span className="sh-sub">Departamento:</span>
+            <select value={departamentoFilter} onChange={(e) => setDepartamentoFilter(e.target.value)}>
+              <option value="">Todos los departamentos</option>
+              {opts.departamentos.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            {departamentoFilter && (
+              <button className="btn" onClick={() => setDepartamentoFilter("")}>Limpiar</button>
+            )}
+          </div>
+          <div>
+            <div className="sh-sub" style={{ marginBottom: 6 }}>
+              Etiquetas SL {etiquetasFilter.length > 0 && `(${etiquetasFilter.length} seleccionadas · OR entre ellas)`}
+            </div>
+            <div className="fb" style={{ flexWrap: "wrap", gap: 4 }}>
+              {opts.etiquetas.length === 0 && <span className="sh-sub">Sin etiquetas disponibles en este reporte.</span>}
+              {opts.etiquetas.map((e) => (
+                <span
+                  key={e}
+                  className={"chip" + (etiquetasFilter.includes(e) ? " on" : "")}
+                  onClick={() => toggleEtiqueta(e)}
+                >
+                  {e}
+                </span>
+              ))}
+              {etiquetasFilter.length > 0 && (
+                <button className="btn" style={{ marginLeft: 8 }} onClick={() => setEtiquetasFilter([])}>
+                  Limpiar etiquetas
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showSkuPanel && (
         <div className="cc no-print" style={{ padding: "12px 14px" }}>
@@ -399,7 +481,13 @@ export default function Executive() {
           reportId={reportId}
           title={`${drill.label}${drill.website ? " · " + drill.website : " · Todos los websites"}`}
           subtitle={data ? `${data.current.filename} (${fmtReportDate(data.current)})` : ""}
-          params={{ ...(DRILL_PARAMS[drill.label] || {}), ...(drill.website ? { website: drill.website } : {}) }}
+          params={{
+            ...(DRILL_PARAMS[drill.label] || {}),
+            ...(drill.website ? { website: drill.website } : {}),
+            ...(departamentoFilter ? { departamento: departamentoFilter } : {}),
+            ...(etiquetasFilter.length ? { etiqueta: etiquetasFilter.join(",") } : {}),
+            ...(skuList.trim() ? { skus: skuList.trim() } : {}),
+          }}
           onClose={() => setDrill(null)}
         />
       )}
@@ -412,6 +500,8 @@ export default function Executive() {
           website={delta.website}
           compareId={compareId || undefined}
           skus={skuList.trim() || undefined}
+          departamento={departamentoFilter || undefined}
+          etiqueta={etiquetasFilter.length ? etiquetasFilter.join(",") : undefined}
           onClose={() => setDelta(null)}
         />
       )}

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
-from ..filters import get_report_products, parse_sku_list
+from ..departments import departamento_of
+from ..filters import csv_list, get_report_products, parse_sku_list
 from ..product import Product
-from ..utils import has_price, is_complete, is_empty, is_priority, kpi_score, stores_of
+from ..utils import etiquetas_of, has_price, is_complete, is_empty, is_priority, kpi_score, stores_of
 
 router = APIRouter(prefix="/api/reports", tags=["executive"])
 
@@ -64,6 +65,26 @@ def _filter_by_skus(rows: list[Product], skus: str | None) -> list[Product]:
     return [r for r in rows if (r.sku or "").strip().lower() in sku_set]
 
 
+def _filter_by_scope(
+    rows: list[Product],
+    skus: str | None,
+    departamento: str | None,
+    etiqueta: str | None,
+) -> list[Product]:
+    """Aplica los filtros globales de la vista (SKUs pegados, departamentos,
+    etiquetas). Departamento y etiqueta son CSV con OR entre valores."""
+    rows = _filter_by_skus(rows, skus)
+    dep_f = csv_list(departamento)
+    etq_f = csv_list(etiqueta)
+    if dep_f:
+        dep_set = set(dep_f)
+        rows = [r for r in rows if (r.departamento or departamento_of(r.grupo_articulo)) in dep_set]
+    if etq_f:
+        etq_set = set(etq_f)
+        rows = [r for r in rows if etq_set.intersection(etiquetas_of(r.etiquetas_sl))]
+    return rows
+
+
 def _cross_report_counts(cur_idx: dict, prev_idx: dict) -> dict:
     """Computa entrantes, salientes y foto_nueva comparando dos indices de SKU."""
     cur_skus = set(cur_idx)
@@ -97,6 +118,8 @@ def executive(
     report_id: int,
     compare_id: int | None = Query(None, description="Reporte contra el que comparar. Si se omite, usa el inmediatamente anterior."),
     skus: str | None = Query(None, description="Lista de SKUs para filtrar (separados por coma, espacio o salto de linea)"),
+    departamento: str | None = Query(None, description="CSV: uno o mas departamentos (OR entre ellos)"),
+    etiqueta: str | None = Query(None, description="CSV: una o mas etiquetas SL (OR entre ellas)"),
 ):
     meta = storage.get_report_meta(report_id)
     if not meta:
@@ -104,8 +127,8 @@ def executive(
 
     prev_meta = _resolve_previous(report_id, compare_id)
 
-    cur_rows = _filter_by_skus(get_report_products(report_id), skus)
-    prev_rows = _filter_by_skus(get_report_products(prev_meta["id"]), skus) if prev_meta else []
+    cur_rows = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta)
+    prev_rows = _filter_by_scope(get_report_products(prev_meta["id"]), skus, departamento, etiqueta) if prev_meta else []
 
     # SKUs que el usuario pego pero no aparecen en ninguno de los dos reportes
     parsed_skus = parse_sku_list(skus)
@@ -236,6 +259,8 @@ def executive_delta(
     compare_id: int | None = Query(None),
     website: str | None = Query(None, description="Acotar a un website; si se omite, es global"),
     skus: str | None = Query(None, description="Lista de SKUs para filtrar"),
+    departamento: str | None = Query(None, description="CSV: uno o mas departamentos"),
+    etiqueta: str | None = Query(None, description="CSV: una o mas etiquetas SL"),
     limit: int = Query(1000, ge=1, le=5000),
 ):
     if indicator not in _INDICATOR_PREDICATES and indicator not in _CROSS_INDICATORS:
@@ -247,8 +272,8 @@ def executive_delta(
 
     prev_meta = _resolve_previous(report_id, compare_id)
 
-    cur_rows_all = _filter_by_skus(get_report_products(report_id), skus)
-    prev_rows_all = _filter_by_skus(get_report_products(prev_meta["id"]), skus) if prev_meta else []
+    cur_rows_all = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta)
+    prev_rows_all = _filter_by_scope(get_report_products(prev_meta["id"]), skus, departamento, etiqueta) if prev_meta else []
 
     # Indices sin filtrar por website: nos permiten saber si un SKU sigue en
     # el catalogo o si perdio el website (para explicar el motivo del cambio).
