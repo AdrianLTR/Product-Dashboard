@@ -15,9 +15,16 @@ export function FiltersProvider({ children }) {
   const [kpiTypes, setKpiTypes] = useState([]); // toggle multi-select desde el Dashboard
   const [skuList, setSkuList] = useState(""); // listado pegado para comparar contra el reporte
   const [etiquetas, setEtiquetas] = useState([]); // Etiquetas SL seleccionadas (OR entre ellas)
+  // Combinaciones EXACTAS de etiquetas. Cada elemento es el string "TAG1,TAG2"
+  // con las etiquetas ya ordenadas (asi el JSON de la combinacion es unico).
+  const [etiquetaCombos, setEtiquetaCombos] = useState([]);
 
   function toggleEtiqueta(t) {
     setEtiquetas((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
+
+  function toggleEtiquetaCombo(comboKey) {
+    setEtiquetaCombos((prev) => (prev.includes(comboKey) ? prev.filter((x) => x !== comboKey) : [...prev, comboKey]));
   }
 
   function toggleKpiType(t) {
@@ -50,6 +57,7 @@ export function FiltersProvider({ children }) {
     setKpiTypes([]);
     setSkuList("");
     setEtiquetas([]);
+    setEtiquetaCombos([]);
   }
 
   const asQuery = useMemo(
@@ -64,8 +72,9 @@ export function FiltersProvider({ children }) {
       categoria,
       skus: skuList.trim(),
       etiqueta: etiquetas.join(","),
+      etiqueta_combos: etiquetaCombos.join("~"),
     }),
-    [chips, formato, sku, nombre, marca, familia, categoria, skuList, etiquetas]
+    [chips, formato, sku, nombre, marca, familia, categoria, skuList, etiquetas, etiquetaCombos]
   );
 
   return (
@@ -75,7 +84,9 @@ export function FiltersProvider({ children }) {
         nombre, setNombre, marca, setMarca, familia, setFamilia,
         categoria, setCategoria,
         kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList,
-        etiquetas, toggleEtiqueta, setEtiquetas, reset, asQuery,
+        etiquetas, toggleEtiqueta, setEtiquetas,
+        etiquetaCombos, toggleEtiquetaCombo, setEtiquetaCombos,
+        reset, asQuery,
       }}
     >
       {children}

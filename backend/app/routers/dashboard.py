@@ -61,6 +61,7 @@ def dashboard(
     skus: str | None = Query(None),
     departamento: str | None = Query(None),
     etiqueta: str | None = Query(None),
+    etiqueta_combos: str | None = Query(None),
     kpi_types: str | None = Query(None),
     search: str | None = Query(None),
 ):
@@ -81,6 +82,7 @@ def dashboard(
         skus=skus,
         departamento=departamento,
         etiqueta=etiqueta,
+        etiqueta_combos=etiqueta_combos,
     )
     # Aplicar tambien los toggles de KPI (Sin Foto, Sin Familia, etc) y la
     # busqueda de la tabla, para que el score, tarjetas y charts reflejen la

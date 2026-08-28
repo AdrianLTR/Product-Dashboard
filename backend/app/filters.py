@@ -30,6 +30,20 @@ def parse_sku_list(value: str | None) -> list[str]:
     return [s.strip() for s in _SKU_SPLIT_RE.split(value) if s.strip()]
 
 
+def parse_etiqueta_combos(value: str | None) -> list[frozenset]:
+    """Combinaciones EXACTAS de etiquetas. Combos separados por `~`,
+    etiquetas dentro por coma. Match: el set de etiquetas del producto
+    tiene que ser IGUAL a alguno de los combos."""
+    if not value:
+        return []
+    out: list[frozenset] = []
+    for combo in value.split("~"):
+        tags = [t.strip() for t in combo.split(",") if t.strip()]
+        if tags:
+            out.append(frozenset(tags))
+    return out
+
+
 def get_report_products(report_id: int) -> list[Product]:
     return storage.get_report_products(report_id)
 
@@ -47,6 +61,7 @@ def apply_dashboard_filters(
     skus: str | None = None,
     departamento: str | None = None,
     etiqueta: str | None = None,
+    etiqueta_combos: str | None = None,
 ) -> list[Product]:
     web_f = csv_list(website)
     dep_f = csv_list(departamento)
@@ -62,6 +77,7 @@ def apply_dashboard_filters(
     categoria_q = (categoria or "").strip().lower()
     # skus: listado exacto pegado por el usuario (comparar un listado contra el reporte)
     sku_set = {s.lower() for s in parse_sku_list(skus)}
+    combos = parse_etiqueta_combos(etiqueta_combos)
 
     out = []
     for r in rows:
@@ -88,6 +104,9 @@ def apply_dashboard_filters(
         if etq_f:
             tags = etiquetas_of(r.etiquetas_sl)
             if not any(e in tags for e in etq_f):
+                continue
+        if combos:
+            if frozenset(etiquetas_of(r.etiquetas_sl)) not in combos:
                 continue
         if estado_f and (r.estado_sl or "").strip().lower() not in estado_f:
             continue

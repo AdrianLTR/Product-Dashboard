@@ -31,8 +31,14 @@ export default function Dashboard() {
     chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
     nombre, setNombre, marca, setMarca, familia, setFamilia, categoria, setCategoria,
     kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList,
-    etiquetas, toggleEtiqueta, setEtiquetas, reset, asQuery,
+    etiquetas, toggleEtiqueta, setEtiquetas,
+    etiquetaCombos, toggleEtiquetaCombo, setEtiquetaCombos,
+    reset, asQuery,
   } = useFilters();
+
+  // Panel de combinaciones de etiquetas (checkboxes)
+  const [showCombosPanel, setShowCombosPanel] = useState(false);
+  const [combosSearch, setCombosSearch] = useState("");
   const [data, setData] = useState(null);
   const [tableData, setTableData] = useState(null);
 
@@ -174,13 +180,23 @@ export default function Dashboard() {
         <select
           value=""
           onChange={(e) => { if (e.target.value) toggleEtiqueta(e.target.value); }}
-          title="Filtrar por Etiqueta SL"
+          title="Filtrar por una Etiqueta SL suelta (OR con otras)"
         >
-          <option value="">Etiqueta SL…</option>
+          <option value="">Etiqueta SL suelta…</option>
           {(data.filters.etiquetas || []).map((t) => (
             <option key={t} value={t}>{etiquetas.includes(t) ? "✓ " : ""}{t}</option>
           ))}
         </select>
+        <button
+          type="button"
+          className={"btn" + (etiquetaCombos.length ? " pri" : "")}
+          onClick={() => setShowCombosPanel((v) => !v)}
+          title="Filtrar por combinaciones EXACTAS de etiquetas"
+        >
+          {etiquetaCombos.length
+            ? `Combinaciones (${etiquetaCombos.length})`
+            : "Combinaciones etiquetas…"}
+        </button>
         <button type="submit" className={"btn " + (hasPendingChanges ? "pri" : "")}>
           {hasPendingChanges ? "Aplicar" : "Buscar"}
         </button>
@@ -255,13 +271,79 @@ export default function Dashboard() {
       {/* Etiquetas SL activas: se agregan desde el dropdown o el grafico */}
       {etiquetas.length > 0 && (
         <div className="fb">
-          <span className="sh-sub">Etiquetas:</span>
+          <span className="sh-sub">Etiquetas (OR):</span>
           {etiquetas.map((t) => (
             <span key={t} className="chip on" onClick={() => toggleEtiqueta(t)} title="Clic para quitar">
               {t} ×
             </span>
           ))}
           <button className="btn" onClick={() => setEtiquetas([])}>Quitar etiquetas</button>
+        </div>
+      )}
+
+      {/* Combinaciones exactas activas */}
+      {etiquetaCombos.length > 0 && (
+        <div className="fb">
+          <span className="sh-sub">Combinaciones exactas:</span>
+          {etiquetaCombos.map((c) => (
+            <span key={c} className="chip on" onClick={() => toggleEtiquetaCombo(c)} title="Clic para quitar">
+              {c.split(",").join(" + ")} ×
+            </span>
+          ))}
+          <button className="btn" onClick={() => setEtiquetaCombos([])}>Quitar combinaciones</button>
+        </div>
+      )}
+
+      {/* Panel selector de combinaciones */}
+      {showCombosPanel && (
+        <div className="cc" style={{ padding: "12px 14px" }}>
+          <div className="sh" style={{ marginBottom: 8 }}>
+            <div className="sh-t">
+              <div className="sh-title" style={{ fontSize: 13 }}>Combinaciones exactas de Etiquetas SL</div>
+              <div className="sh-sub">
+                Cada linea es una combinacion tal cual aparece en el reporte. Marca una o mas — se
+                traen los productos cuyo conjunto de etiquetas coincide EXACTO con alguna.
+              </div>
+            </div>
+            <div className="ml fb">
+              <input
+                type="text"
+                placeholder="Buscar etiqueta…"
+                value={combosSearch}
+                onChange={(e) => setCombosSearch(e.target.value)}
+              />
+              <button className="btn" onClick={() => setShowCombosPanel(false)}>Cerrar</button>
+            </div>
+          </div>
+          {(() => {
+            const combos = data.etiqueta_combinaciones || [];
+            const q = combosSearch.trim().toLowerCase();
+            const visible = q ? combos.filter((c) => c.tags.some((t) => t.toLowerCase().includes(q))) : combos;
+            if (combos.length === 0) return <div className="sh-sub">Sin etiquetas en este reporte.</div>;
+            if (visible.length === 0) return <div className="sh-sub">Sin combinaciones que contengan "{combosSearch}".</div>;
+            return (
+              <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid var(--b2)", borderRadius: 6, padding: 6 }}>
+                {visible.map((c) => {
+                  const key = c.tags.join(",");
+                  const checked = etiquetaCombos.includes(key);
+                  return (
+                    <label
+                      key={key}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: checked ? "var(--sur2)" : "transparent" }}
+                    >
+                      <input type="checkbox" checked={checked} onChange={() => toggleEtiquetaCombo(key)} />
+                      <span style={{ flex: 1, fontFamily: "var(--mono)", fontSize: 12 }}>
+                        {c.tags.length === 0 ? <em>(sin etiquetas)</em> : c.tags.join(" + ")}
+                      </span>
+                      <span className="sh-sub" style={{ minWidth: 60, textAlign: "right" }}>
+                        {c.count.toLocaleString()} SKU{c.count === 1 ? "" : "s"}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 

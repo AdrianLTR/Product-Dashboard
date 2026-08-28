@@ -24,6 +24,7 @@ def list_products(
     skus: str | None = Query(None),
     departamento: str | None = Query(None),
     etiqueta: str | None = Query(None),
+    etiqueta_combos: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(300, ge=1, le=2000),
 ):
@@ -34,7 +35,7 @@ def list_products(
     rows = apply_dashboard_filters(
         rows, website=website, marca=marca, categoria=categoria, estado=estado,
         formato=formato, familia=familia, sku=sku, nombre=nombre, skus=skus,
-        departamento=departamento, etiqueta=etiqueta,
+        departamento=departamento, etiqueta=etiqueta, etiqueta_combos=etiqueta_combos,
     )
     rows = apply_kpi_type_filter(rows, kpi_types or kpi_type, search)
 
