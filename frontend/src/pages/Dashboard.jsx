@@ -39,6 +39,22 @@ export default function Dashboard() {
   // Panel de combinaciones de etiquetas (checkboxes)
   const [showCombosPanel, setShowCombosPanel] = useState(false);
   const [combosSearch, setCombosSearch] = useState("");
+  // Draft local: los cambios en los checkboxes NO impactan el filtro hasta
+  // que el usuario apriete "Confirmar". Evita disparar una peticion por
+  // cada clic y le da tiempo de elegir varias combinaciones seguidas.
+  const [combosDraft, setCombosDraft] = useState([]);
+  // Al abrir el panel, sincronizar el draft con lo que ya esta aplicado.
+  useEffect(() => {
+    if (showCombosPanel) setCombosDraft(etiquetaCombos);
+  }, [showCombosPanel]); // solo cuando se abre
+  const combosDraftHasChanges = useMemo(() => {
+    if (combosDraft.length !== etiquetaCombos.length) return true;
+    const set = new Set(etiquetaCombos);
+    return combosDraft.some((c) => !set.has(c));
+  }, [combosDraft, etiquetaCombos]);
+  const toggleCombosDraft = (key) => {
+    setCombosDraft((prev) => prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]);
+  };
   const [data, setData] = useState(null);
   const [tableData, setTableData] = useState(null);
 
@@ -299,10 +315,12 @@ export default function Dashboard() {
         <div className="cc" style={{ padding: "12px 14px" }}>
           <div className="sh" style={{ marginBottom: 8 }}>
             <div className="sh-t">
-              <div className="sh-title" style={{ fontSize: 13 }}>Combinaciones exactas de Etiquetas SL</div>
+              <div className="sh-title" style={{ fontSize: 13 }}>
+                Combinaciones exactas de Etiquetas SL
+                {combosDraft.length > 0 && <span className="sh-sub" style={{ marginLeft: 8 }}>· {combosDraft.length} marcada{combosDraft.length === 1 ? "" : "s"}</span>}
+              </div>
               <div className="sh-sub">
-                Cada linea es una combinacion tal cual aparece en el reporte. Marca una o mas — se
-                traen los productos cuyo conjunto de etiquetas coincide EXACTO con alguna.
+                Marca las combinaciones que quieras y presiona Confirmar para aplicar el filtro.
               </div>
             </div>
             <div className="ml fb">
@@ -312,7 +330,6 @@ export default function Dashboard() {
                 value={combosSearch}
                 onChange={(e) => setCombosSearch(e.target.value)}
               />
-              <button className="btn" onClick={() => setShowCombosPanel(false)}>Cerrar</button>
             </div>
           </div>
           {(() => {
@@ -320,28 +337,48 @@ export default function Dashboard() {
             const q = combosSearch.trim().toLowerCase();
             const visible = q ? combos.filter((c) => c.tags.some((t) => t.toLowerCase().includes(q))) : combos;
             if (combos.length === 0) return <div className="sh-sub">Sin etiquetas en este reporte.</div>;
-            if (visible.length === 0) return <div className="sh-sub">Sin combinaciones que contengan "{combosSearch}".</div>;
             return (
-              <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid var(--b2)", borderRadius: 6, padding: 6 }}>
-                {visible.map((c) => {
-                  const key = c.tags.join(",");
-                  const checked = etiquetaCombos.includes(key);
-                  return (
-                    <label
-                      key={key}
-                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: checked ? "var(--sur2)" : "transparent" }}
-                    >
-                      <input type="checkbox" checked={checked} onChange={() => toggleEtiquetaCombo(key)} />
-                      <span style={{ flex: 1, fontFamily: "var(--mono)", fontSize: 12 }}>
-                        {c.tags.length === 0 ? <em>(sin etiquetas)</em> : c.tags.join(" + ")}
-                      </span>
-                      <span className="sh-sub" style={{ minWidth: 60, textAlign: "right" }}>
-                        {c.count.toLocaleString()} SKU{c.count === 1 ? "" : "s"}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              <>
+                {visible.length === 0 ? (
+                  <div className="sh-sub">Sin combinaciones que contengan "{combosSearch}".</div>
+                ) : (
+                  <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid var(--b2)", borderRadius: 6, padding: 6 }}>
+                    {visible.map((c) => {
+                      const key = c.tags.join(",");
+                      const checked = combosDraft.includes(key);
+                      return (
+                        <label
+                          key={key}
+                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: checked ? "var(--sur2)" : "transparent" }}
+                        >
+                          <input type="checkbox" checked={checked} onChange={() => toggleCombosDraft(key)} />
+                          <span style={{ flex: 1, fontFamily: "var(--mono)", fontSize: 12 }}>
+                            {c.tags.length === 0 ? <em>(sin etiquetas)</em> : c.tags.join(" + ")}
+                          </span>
+                          <span className="sh-sub" style={{ minWidth: 60, textAlign: "right" }}>
+                            {c.count.toLocaleString()} SKU{c.count === 1 ? "" : "s"}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="fb" style={{ marginTop: 8 }}>
+                  <button
+                    className={"btn" + (combosDraftHasChanges ? " pri" : "")}
+                    onClick={() => { setEtiquetaCombos(combosDraft); setShowCombosPanel(false); }}
+                    disabled={!combosDraftHasChanges}
+                  >
+                    Confirmar {combosDraft.length > 0 && `(${combosDraft.length})`}
+                  </button>
+                  <button className="btn" onClick={() => setCombosDraft([])} disabled={combosDraft.length === 0}>
+                    Desmarcar todo
+                  </button>
+                  <button className="btn" onClick={() => { setCombosDraft(etiquetaCombos); setShowCombosPanel(false); }} style={{ marginLeft: "auto" }}>
+                    Cancelar
+                  </button>
+                </div>
+              </>
             );
           })()}
         </div>
