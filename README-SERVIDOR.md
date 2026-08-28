@@ -1,101 +1,120 @@
-# Product Hub CCN — instrucciones para montar en el servidor
+# Product Hub CCN — Instalacion en el servidor
 
-Dashboard interno de catálogo (KPIs por website, detalle por SKU, comparación
-entre reportes, resumen ejecutivo). Backend en FastAPI (Python), frontend en
-React. Sin motor de base de datos: cada reporte cargado se guarda como un
-archivo JSON plano en disco.
+Esta guia es para instalar y mantener el Product Hub CCN en el servidor interno de CCN. Todo se maneja con scripts PowerShell — no hace falta manejo manual de venv, dependencias ni servicios.
 
-## Requisitos previos
+## Requisitos previos (una sola vez)
 
-- Windows con **Python 3.12+** instalado
-- **Node.js LTS** instalado (para compilar el frontend)
+Instalar en el servidor:
 
-## 1. Extraer el archivo
+1. **Python 3.11 o superior** — https://www.python.org/downloads/windows/
+   - Al instalar, tildar "Add Python to PATH"
+2. **Node.js 18 o superior** — https://nodejs.org/
+   - Version LTS
+3. **Git** — https://git-scm.com/download/win
+   - O TortoiseGit si prefieren interfaz grafica
 
-Descomprime este zip donde quieras que viva el proyecto en el servidor,
-por ejemplo `C:\apps\product-hub`.
+Para verificar que todo quedo bien, abrir PowerShell y correr:
+```powershell
+python --version
+node --version
+git --version
+```
 
-## 2. Backend — crear entorno virtual e instalar dependencias
+Los tres deben devolver una version.
+
+## Primera instalacion
+
+1. Clonar el repositorio en `C:\ProductHub\`:
+   ```powershell
+   cd C:\
+   git clone https://github.com/AdrianLTR/Product-Dashboard.git ProductHub
+   cd ProductHub
+   ```
+
+2. Correr el instalador:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File install.ps1
+   ```
+   Este script:
+   - Instala las librerias de Python (fastapi, pandas, etc.)
+   - Instala y compila el frontend (React)
+   - Crea la carpeta de datos en `C:\ProductHubData\`
+   - Setea la variable de entorno `PRODUCT_HUB_DATA_DIR`
+
+3. **Opcion A** — Arrancar como servicio Windows (recomendado para produccion):
+   ```powershell
+   # Como Administrador
+   powershell -ExecutionPolicy Bypass -File install-service.ps1
+   ```
+   Esto instala NSSM (si no lo tenes) y registra el servicio `ProductHubCCN`.
+   Se arranca solo al bootear el servidor.
+
+   **Opcion B** — Arrancar manualmente (util para probar):
+   ```powershell
+   .\start.ps1
+   ```
+   Se cierra con Ctrl+C. No sobrevive al cerrar la ventana.
+
+4. Probar el acceso:
+   - Desde el servidor: http://localhost:8000
+   - Desde la LAN: http://\<ip-del-servidor\>:8000
+   - Puede que haga falta abrir el puerto 8000 en el firewall de Windows.
+
+## Actualizar a la ultima version
+
+Cada vez que haya cambios en el repositorio:
 
 ```powershell
-cd C:\apps\product-hub
-python -m venv C:\venvs\product_hub
-C:\venvs\product_hub\Scripts\pip install -r backend\requirements.txt
+cd C:\ProductHub
+powershell -ExecutionPolicy Bypass -File update.ps1
 ```
 
-## 3. Frontend — compilar
+Este script:
+- Hace `git pull` para bajar los cambios
+- Reinstala dependencias solo si `requirements.txt` cambio
+- Recompila el frontend
+- Reinicia el servicio si esta instalado
+- Muestra la lista de commits nuevos que se aplicaron
+
+Los **reportes cargados no se tocan** — viven en `C:\ProductHubData\`, fuera del proyecto.
+
+## Manejo del servicio
+
+Si se instalo como servicio con `install-service.ps1`:
 
 ```powershell
-cd frontend
-npm install
-npm run build
-cd ..
+# Ver estado
+Get-Service ProductHubCCN
+
+# Arrancar / parar / reiniciar
+Start-Service   ProductHubCCN
+Stop-Service    ProductHubCCN
+Restart-Service ProductHubCCN
 ```
 
-Esto genera `frontend\dist`, que el backend sirve directamente — no hace
-falta un servidor web aparte para el frontend.
+O desde la interfaz grafica: `services.msc` -> buscar "Product Hub CCN".
 
-## 4. Abrir el puerto en el firewall de Windows
+Los logs quedan en `C:\ProductHub\logs\stdout.log` y `stderr.log`.
 
-Una sola vez, en una terminal como administrador:
+## Configuracion por variables de entorno
 
-```powershell
-New-NetFirewallRule -DisplayName "Product Hub CCN" -Direction Inbound -LocalPort 8000 -Protocol TCP -Action Allow
-```
+- **`PRODUCT_HUB_DATA_DIR`** — Ruta donde se guardan los reportes. Default: `C:\ProductHubData`.
+- **`PRODUCT_HUB_PORT`** — Puerto del servidor. Default: `8000`.
 
-## 5. Arrancar el servidor
+Si las cambias, hay que reiniciar el servicio para que las tome.
 
-```powershell
-C:\venvs\product_hub\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --app-dir backend
-```
+## Autenticacion con GitHub (repo privado)
 
-Mientras esa ventana quede abierta, la app responde en el puerto 8000 (API
-y frontend en un solo proceso). Si se cierra la ventana, el servidor se cae.
+Al clonar y hacer pull, Git va a pedir credenciales. Ver las opciones en el `README-DEPLOY-KEYS.md` (o preguntarle al owner del repo). La mas segura para un servidor es una **Deploy Key SSH** de solo lectura.
 
-## 6. Acceder desde cualquier PC de la red de la empresa
+## Problemas comunes
 
-```powershell
-ipconfig
-```
+- **"python no se reconoce"** — Python no esta en el PATH. Reinstalar y tildar "Add to PATH".
+- **"npm no se reconoce"** — Node.js no esta en el PATH. Cerrar y reabrir PowerShell despues de instalar.
+- **Puerto 8000 ocupado** — Cambiar el puerto con `$env:PRODUCT_HUB_PORT = "8080"` y volver a instalar el servicio.
+- **El servicio no arranca** — Revisar `C:\ProductHub\logs\stderr.log`.
+- **Errores de permisos** — Correr PowerShell como Administrador para los scripts que registran servicios.
 
-Toma la IPv4 de esta máquina (algo como `192.168.x.x` o `10.x.x.x`) y desde
-cualquier navegador de la red, entra a:
+## Backup
 
-```
-http://<esa-IP>:8000
-```
-
-## Dónde quedan los reportes cargados
-
-Cada `.xlsx` que se sube desde "Cargar Reporte" se guarda como un snapshot
-independiente en:
-
-```
-%USERPROFILE%\.local\product_hub_data\reports\<id>.json
-```
-
-Esto vive **fuera** de la carpeta del proyecto, así que reemplazar los
-archivos del proyecto (una actualización futura) no borra el histórico de
-reportes. Se puede cambiar de ubicación con la variable de entorno
-`PRODUCT_HUB_DATA_DIR` antes de arrancar uvicorn, por ejemplo para apuntar
-a un disco con respaldo.
-
-## Actualizar el proyecto más adelante
-
-Cuando haya cambios, se recibirá un zip nuevo. Pasos:
-
-1. Detener el servidor (Ctrl+C en la terminal de uvicorn).
-2. Descomprimir el zip nuevo sobre la misma carpeta (reemplaza los archivos
-   de código; no toca `%USERPROFILE%\.local\product_hub_data\`, que vive
-   aparte).
-3. Repetir el paso 3 de arriba (`npm install && npm run build`) solo si el
-   frontend cambió.
-4. Volver a arrancar uvicorn (paso 5).
-
-## Mantener el servidor arriba de forma permanente (opcional)
-
-Los pasos anteriores dejan la app corriendo mientras la terminal esté
-abierta. Si se quiere que sobreviva a un reinicio de la PC o a que alguien
-cierre sesión sin querer, se puede configurar como servicio de Windows
-(con NSSM o el Programador de Tareas). No es necesario para probar el
-sistema; solo para dejarlo en producción de forma permanente.
+Solo hay que respaldar `C:\ProductHubData\` — es la unica carpeta que contiene datos reales del usuario. Todo lo demas se puede regenerar clonando el repo y corriendo `install.ps1`.
