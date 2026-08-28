@@ -182,26 +182,34 @@ export default function Executive() {
   const [skuList, setSkuList] = useState("");
   const [showSkuPanel, setShowSkuPanel] = useState(false);
 
-  // Filtros por Departamento (single) y Etiquetas SL (multi, OR)
+  // Filtros por Departamento (single) y Combinaciones de etiquetas (multi checkboxes)
   const [departamentoFilter, setDepartamentoFilter] = useState("");
-  const [etiquetasFilter, setEtiquetasFilter] = useState([]);
+  // Cada combo se guarda como el string "TAG1,TAG2,..." (tags ya ordenados)
+  const [etiquetaCombosFilter, setEtiquetaCombosFilter] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [combosSearch, setCombosSearch] = useState("");
 
   // Opciones cargadas desde el dashboard del reporte actual
-  const [opts, setOpts] = useState({ departamentos: [], etiquetas: [] });
+  const [opts, setOpts] = useState({ departamentos: [], etiquetaCombinaciones: [] });
   useEffect(() => {
     if (!reportId) return;
     api.getDashboard(reportId).then((d) => {
       setOpts({
-        departamentos: (d.departamentos || []).map((x) => x.name).filter(Boolean),
-        etiquetas: d.filters?.etiquetas || [],
+        departamentos: (d.departamentos || []).map((x) => x.departamento).filter(Boolean),
+        etiquetaCombinaciones: d.etiqueta_combinaciones || [],
       });
     }).catch(() => {});
   }, [reportId]);
 
-  const toggleEtiqueta = (e) => {
-    setEtiquetasFilter((prev) => prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]);
+  const toggleCombo = (comboKey) => {
+    setEtiquetaCombosFilter((prev) => prev.includes(comboKey) ? prev.filter((x) => x !== comboKey) : [...prev, comboKey]);
   };
+
+  const visibleCombos = useMemo(() => {
+    const q = combosSearch.trim().toLowerCase();
+    if (!q) return opts.etiquetaCombinaciones;
+    return opts.etiquetaCombinaciones.filter((c) => c.tags.some((t) => t.toLowerCase().includes(q)));
+  }, [opts.etiquetaCombinaciones, combosSearch]);
 
   useEffect(() => {
     setReportId(currentReportId);
@@ -217,11 +225,12 @@ export default function Executive() {
         compareId || undefined,
         skuList.trim() || undefined,
         departamentoFilter || undefined,
-        etiquetasFilter.length ? etiquetasFilter.join(",") : undefined,
+        undefined,
+        etiquetaCombosFilter.length ? etiquetaCombosFilter.join("~") : undefined,
       )
       .then(setData)
       .catch((err) => setError(err.message));
-  }, [reportId, compareId, skuList, departamentoFilter, etiquetasFilter]);
+  }, [reportId, compareId, skuList, departamentoFilter, etiquetaCombosFilter]);
 
   const visibleStores = useMemo(() => {
     if (!data) return [];
@@ -266,7 +275,7 @@ export default function Executive() {
                   : <> · no hay reporte de comparación, no hay deltas</>}
                 {skuList.trim() && <> · <span style={{ color: "var(--teal)" }}>filtrado por listado de SKUs</span></>}
                 {departamentoFilter && <> · <span style={{ color: "var(--teal)" }}>dpto: {departamentoFilter}</span></>}
-                {etiquetasFilter.length > 0 && <> · <span style={{ color: "var(--teal)" }}>etiquetas: {etiquetasFilter.join(", ")}</span></>}
+                {etiquetaCombosFilter.length > 0 && <> · <span style={{ color: "var(--teal)" }}>{etiquetaCombosFilter.length} combinacion{etiquetaCombosFilter.length === 1 ? "" : "es"} de etiquetas</span></>}
               </>
             ) : (
               "Cargando…"
@@ -286,11 +295,11 @@ export default function Executive() {
             ))}
           </select>
           <button
-            className={"btn" + ((departamentoFilter || etiquetasFilter.length) ? " pri" : "")}
+            className={"btn" + ((departamentoFilter || etiquetaCombosFilter.length) ? " pri" : "")}
             onClick={() => setShowFilters((v) => !v)}
           >
-            {(departamentoFilter || etiquetasFilter.length)
-              ? `Filtros (${(departamentoFilter ? 1 : 0) + etiquetasFilter.length})`
+            {(departamentoFilter || etiquetaCombosFilter.length)
+              ? `Filtros (${(departamentoFilter ? 1 : 0) + etiquetaCombosFilter.length})`
               : "Filtros"}
           </button>
           <button
@@ -324,26 +333,50 @@ export default function Executive() {
             )}
           </div>
           <div>
-            <div className="sh-sub" style={{ marginBottom: 6 }}>
-              Etiquetas SL {etiquetasFilter.length > 0 && `(${etiquetasFilter.length} seleccionadas · OR entre ellas)`}
-            </div>
-            <div className="fb" style={{ flexWrap: "wrap", gap: 4 }}>
-              {opts.etiquetas.length === 0 && <span className="sh-sub">Sin etiquetas disponibles en este reporte.</span>}
-              {opts.etiquetas.map((e) => (
-                <span
-                  key={e}
-                  className={"chip" + (etiquetasFilter.includes(e) ? " on" : "")}
-                  onClick={() => toggleEtiqueta(e)}
-                >
-                  {e}
-                </span>
-              ))}
-              {etiquetasFilter.length > 0 && (
-                <button className="btn" style={{ marginLeft: 8 }} onClick={() => setEtiquetasFilter([])}>
-                  Limpiar etiquetas
-                </button>
+            <div className="fb" style={{ marginBottom: 6, alignItems: "center" }}>
+              <span className="sh-sub">
+                Combinaciones exactas de Etiquetas SL {etiquetaCombosFilter.length > 0 && `· ${etiquetaCombosFilter.length} seleccionada${etiquetaCombosFilter.length === 1 ? "" : "s"}`}
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar etiqueta…"
+                value={combosSearch}
+                onChange={(e) => setCombosSearch(e.target.value)}
+                style={{ marginLeft: "auto", minWidth: 180 }}
+              />
+              {etiquetaCombosFilter.length > 0 && (
+                <button className="btn" onClick={() => setEtiquetaCombosFilter([])}>Limpiar</button>
               )}
             </div>
+            <div className="sh-sub" style={{ marginBottom: 6, fontSize: 11 }}>
+              Cada linea es una combinacion de etiquetas que existe tal cual en el reporte. Marca una o mas — se traen los productos cuyo conjunto de etiquetas coincide EXACTO con alguna.
+            </div>
+            {opts.etiquetaCombinaciones.length === 0 ? (
+              <div className="sh-sub">Sin etiquetas en este reporte.</div>
+            ) : (
+              <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--b2)", borderRadius: 6, padding: 6 }}>
+                {visibleCombos.length === 0 ? (
+                  <div className="sh-sub" style={{ padding: 6 }}>Sin combinaciones que contengan "{combosSearch}".</div>
+                ) : visibleCombos.map((c) => {
+                  const key = c.tags.join(",");
+                  const checked = etiquetaCombosFilter.includes(key);
+                  return (
+                    <label
+                      key={key}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: checked ? "var(--sur2)" : "transparent" }}
+                    >
+                      <input type="checkbox" checked={checked} onChange={() => toggleCombo(key)} />
+                      <span style={{ flex: 1, fontFamily: "var(--mono)", fontSize: 12 }}>
+                        {c.tags.length === 0 ? <em>(sin etiquetas)</em> : c.tags.join(" + ")}
+                      </span>
+                      <span className="sh-sub" style={{ minWidth: 60, textAlign: "right" }}>
+                        {c.count.toLocaleString()} SKU{c.count === 1 ? "" : "s"}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -485,7 +518,7 @@ export default function Executive() {
             ...(DRILL_PARAMS[drill.label] || {}),
             ...(drill.website ? { website: drill.website } : {}),
             ...(departamentoFilter ? { departamento: departamentoFilter } : {}),
-            ...(etiquetasFilter.length ? { etiqueta: etiquetasFilter.join(",") } : {}),
+            ...(etiquetaCombosFilter.length ? { etiqueta_combos: etiquetaCombosFilter.join("~") } : {}),
             ...(skuList.trim() ? { skus: skuList.trim() } : {}),
           }}
           onClose={() => setDrill(null)}
@@ -501,7 +534,7 @@ export default function Executive() {
           compareId={compareId || undefined}
           skus={skuList.trim() || undefined}
           departamento={departamentoFilter || undefined}
-          etiqueta={etiquetasFilter.length ? etiquetasFilter.join(",") : undefined}
+          etiquetaCombos={etiquetaCombosFilter.length ? etiquetaCombosFilter.join("~") : undefined}
           onClose={() => setDelta(null)}
         />
       )}

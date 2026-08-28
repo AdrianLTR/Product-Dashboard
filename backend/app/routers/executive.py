@@ -65,23 +65,45 @@ def _filter_by_skus(rows: list[Product], skus: str | None) -> list[Product]:
     return [r for r in rows if (r.sku or "").strip().lower() in sku_set]
 
 
+def _parse_combos(value: str | None) -> list[frozenset]:
+    """Combinaciones exactas de etiquetas.
+
+    Formato: cada combo separado por `~`, dentro de un combo las etiquetas
+    separadas por `,`. Ej: "TRABAJADO,APAGADO-COMERCIAL~NUEVO" -> dos
+    combos. Un producto matchea si su set de etiquetas es IGUAL a alguno
+    de los combos (no basta con contener las etiquetas)."""
+    if not value:
+        return []
+    out: list[frozenset] = []
+    for combo in value.split("~"):
+        tags = [t.strip() for t in combo.split(",") if t.strip()]
+        if tags:
+            out.append(frozenset(tags))
+    return out
+
+
 def _filter_by_scope(
     rows: list[Product],
     skus: str | None,
     departamento: str | None,
     etiqueta: str | None,
+    etiqueta_combos: str | None = None,
 ) -> list[Product]:
     """Aplica los filtros globales de la vista (SKUs pegados, departamentos,
-    etiquetas). Departamento y etiqueta son CSV con OR entre valores."""
+    etiquetas). Departamento y etiqueta son CSV con OR entre valores.
+    etiqueta_combos filtra por combinaciones EXACTAS (AND dentro, OR entre)."""
     rows = _filter_by_skus(rows, skus)
     dep_f = csv_list(departamento)
     etq_f = csv_list(etiqueta)
+    combos = _parse_combos(etiqueta_combos)
     if dep_f:
         dep_set = set(dep_f)
         rows = [r for r in rows if (r.departamento or departamento_of(r.grupo_articulo)) in dep_set]
     if etq_f:
         etq_set = set(etq_f)
         rows = [r for r in rows if etq_set.intersection(etiquetas_of(r.etiquetas_sl))]
+    if combos:
+        rows = [r for r in rows if frozenset(etiquetas_of(r.etiquetas_sl)) in combos]
     return rows
 
 
@@ -120,6 +142,7 @@ def executive(
     skus: str | None = Query(None, description="Lista de SKUs para filtrar (separados por coma, espacio o salto de linea)"),
     departamento: str | None = Query(None, description="CSV: uno o mas departamentos (OR entre ellos)"),
     etiqueta: str | None = Query(None, description="CSV: una o mas etiquetas SL (OR entre ellas)"),
+    etiqueta_combos: str | None = Query(None, description="Combinaciones EXACTAS: combos separados por ~, tags dentro por coma"),
 ):
     meta = storage.get_report_meta(report_id)
     if not meta:
@@ -127,8 +150,8 @@ def executive(
 
     prev_meta = _resolve_previous(report_id, compare_id)
 
-    cur_rows = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta)
-    prev_rows = _filter_by_scope(get_report_products(prev_meta["id"]), skus, departamento, etiqueta) if prev_meta else []
+    cur_rows = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta, etiqueta_combos)
+    prev_rows = _filter_by_scope(get_report_products(prev_meta["id"]), skus, departamento, etiqueta, etiqueta_combos) if prev_meta else []
 
     # SKUs que el usuario pego pero no aparecen en ninguno de los dos reportes
     parsed_skus = parse_sku_list(skus)
@@ -261,6 +284,7 @@ def executive_delta(
     skus: str | None = Query(None, description="Lista de SKUs para filtrar"),
     departamento: str | None = Query(None, description="CSV: uno o mas departamentos"),
     etiqueta: str | None = Query(None, description="CSV: una o mas etiquetas SL"),
+    etiqueta_combos: str | None = Query(None, description="Combinaciones EXACTAS"),
     limit: int = Query(1000, ge=1, le=5000),
 ):
     if indicator not in _INDICATOR_PREDICATES and indicator not in _CROSS_INDICATORS:
@@ -272,8 +296,8 @@ def executive_delta(
 
     prev_meta = _resolve_previous(report_id, compare_id)
 
-    cur_rows_all = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta)
-    prev_rows_all = _filter_by_scope(get_report_products(prev_meta["id"]), skus, departamento, etiqueta) if prev_meta else []
+    cur_rows_all = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta, etiqueta_combos)
+    prev_rows_all = _filter_by_scope(get_report_products(prev_meta["id"]), skus, departamento, etiqueta, etiqueta_combos) if prev_meta else []
 
     # Indices sin filtrar por website: nos permiten saber si un SKU sigue en
     # el catalogo o si perdio el website (para explicar el motivo del cambio).

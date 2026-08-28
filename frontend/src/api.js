@@ -97,8 +97,8 @@ export const api = {
   getProducts: (reportId, params) => request(`/reports/${reportId}/products${qs(params)}`),
   compareReports: (baseId, targetId, skus) => request(`/compare${qs({ base_id: baseId, target_id: targetId, skus })}`),
   getTrends: () => request("/trends"),
-  getExecutive: (reportId, compareId, skus, departamento, etiqueta) =>
-    request(`/reports/${reportId}/executive${qs({ compare_id: compareId, skus, departamento, etiqueta })}`),
+  getExecutive: (reportId, compareId, skus, departamento, etiqueta, etiqueta_combos) =>
+    request(`/reports/${reportId}/executive${qs({ compare_id: compareId, skus, departamento, etiqueta, etiqueta_combos })}`),
   getCategoryWebsite: (reportId, params) =>
     request(`/reports/${reportId}/category-website${qs(params)}`),
   getExecutiveDelta: (reportId, params) =>

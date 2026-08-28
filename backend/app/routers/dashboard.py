@@ -151,6 +151,10 @@ def dashboard(
 
     # Etiquetas SL: un producto puede tener varias, separadas por coma/;/|
     etiqueta_counter: Counter = Counter()
+    # Combinaciones exactas de etiquetas: un producto con ["A","B"] y otro
+    # con ["A","B","C"] son 2 combinaciones distintas. Se guardan ordenadas
+    # (tuple sorted) para que "A,B" == "B,A".
+    combo_counter: Counter = Counter()
     sin_etiquetas = 0
     for r in rows:
         tags = etiquetas_of(r.etiquetas_sl)
@@ -158,6 +162,7 @@ def dashboard(
             sin_etiquetas += 1
             continue
         etiqueta_counter.update(tags)  # etiquetas_of ya deduplica por producto
+        combo_counter[tuple(sorted(tags))] += 1
 
     # Agrupacion por Departamento (derivado del grupo via Hoja Madre). Reemplaza
     # el agrupado por grupo de articulo, para entender las categorias por depto.
@@ -222,6 +227,10 @@ def dashboard(
         "top_marcas": _top(marca_counter, 10),
         "top_categorias": _top(cat_counter, 10),
         "top_etiquetas": _top(etiqueta_counter, 12),
+        "etiqueta_combinaciones": [
+            {"tags": list(combo), "count": n}
+            for combo, n in combo_counter.most_common()
+        ],
         "sin_etiquetas": sin_etiquetas,
         "precio": {
             "con_precio": con_precio,
