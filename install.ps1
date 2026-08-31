@@ -57,7 +57,9 @@ Write-Host "`n==================================================" -ForegroundCol
 Write-Host "  Instalacion completada" -ForegroundColor Green
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "`nProximos pasos:"
-Write-Host "  - Para arrancar el servidor manualmente:  .\start.ps1"
-Write-Host "  - Para instalarlo como servicio Windows:  .\install-service.ps1"
-Write-Host "  - Para actualizarlo cuando haya cambios:  .\update.ps1"
+Write-Host "  - Para arrancar el servidor:              doble click en start.ps1"
+Write-Host "  - Para actualizarlo cuando haya cambios:  doble click en update.ps1"
+Write-Host ""
+Write-Host "  El servidor queda corriendo en la ventana de start.ps1."
+Write-Host "  Dejarla abierta (se puede minimizar). Si se cierra, se apaga."
 Write-Host ""

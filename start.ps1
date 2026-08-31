@@ -18,15 +18,20 @@ if (-not $env:PRODUCT_HUB_DATA_DIR) {
 
 $port = if ($env:PRODUCT_HUB_PORT) { $env:PRODUCT_HUB_PORT } else { "8000" }
 
+$host.UI.RawUI.WindowTitle = "Product Hub CCN - Servidor (NO CERRAR)"
+
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "  Product Hub CCN - Arranque manual" -ForegroundColor Cyan
+Write-Host "  Product Hub CCN - Servidor corriendo" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "  Puerto:        $port"
 Write-Host "  Data dir:      $env:PRODUCT_HUB_DATA_DIR"
 Write-Host "  Acceso local:  http://localhost:$port"
 Write-Host "  Acceso LAN:    http://<ip-del-servidor>:$port"
 Write-Host ""
-Write-Host "  Ctrl+C para detener" -ForegroundColor Yellow
+Write-Host "  * DEJAR ESTA VENTANA ABIERTA (se puede minimizar) *" -ForegroundColor Yellow
+Write-Host "  * Si se cierra, el servidor se apaga             *" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Para detener el servidor: Ctrl+C o cerrar la ventana" -ForegroundColor DarkGray
 Write-Host ""
 
 python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $port

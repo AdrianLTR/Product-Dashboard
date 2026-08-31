@@ -1,19 +1,17 @@
 # Product Hub CCN — Instalacion en el servidor
 
-Esta guia es para instalar y mantener el Product Hub CCN en el servidor interno de CCN. Todo se maneja con scripts PowerShell — no hace falta manejo manual de venv, dependencias ni servicios.
+Guia rapida para instalar y mantener el Product Hub CCN en el servidor interno de CCN. Todo se hace con scripts PowerShell — 3 comandos en total.
 
 ## Requisitos previos (una sola vez)
 
 Instalar en el servidor:
 
 1. **Python 3.11 o superior** — https://www.python.org/downloads/windows/
-   - Al instalar, tildar "Add Python to PATH"
-2. **Node.js 18 o superior** — https://nodejs.org/
-   - Version LTS
-3. **Git** — https://git-scm.com/download/win
-   - O TortoiseGit si prefieren interfaz grafica
+   - Al instalar, tildar **"Add Python to PATH"**
+2. **Node.js 18 o superior** — https://nodejs.org/ (version LTS)
+3. **Git** — https://git-scm.com/download/win (o TortoiseGit si prefiere interfaz grafica)
 
-Para verificar que todo quedo bien, abrir PowerShell y correr:
+Para verificar que quedo bien, abrir PowerShell y correr:
 ```powershell
 python --version
 node --version
@@ -22,7 +20,7 @@ git --version
 
 Los tres deben devolver una version.
 
-## Primera instalacion
+## Instalacion (una sola vez)
 
 1. Clonar el repositorio en `C:\ProductHub\`:
    ```powershell
@@ -41,80 +39,68 @@ Los tres deben devolver una version.
    - Crea la carpeta de datos en `C:\ProductHubData\`
    - Setea la variable de entorno `PRODUCT_HUB_DATA_DIR`
 
-3. **Opcion A** — Arrancar como servicio Windows (recomendado para produccion):
-   ```powershell
-   # Como Administrador
-   powershell -ExecutionPolicy Bypass -File install-service.ps1
-   ```
-   Esto instala NSSM (si no lo tenes) y registra el servicio `ProductHubCCN`.
-   Se arranca solo al bootear el servidor.
+## Arrancar el servidor
 
-   **Opcion B** — Arrancar manualmente (util para probar):
-   ```powershell
-   .\start.ps1
-   ```
-   Se cierra con Ctrl+C. No sobrevive al cerrar la ventana.
+Doble click en **`start.ps1`** — se abre una ventana de PowerShell con el servidor corriendo.
 
-4. Probar el acceso:
-   - Desde el servidor: http://localhost:8000
-   - Desde la LAN: http://\<ip-del-servidor\>:8000
-   - Puede que haga falta abrir el puerto 8000 en el firewall de Windows.
+**Dejar esa ventana abierta.** Se puede minimizar. Si se cierra, se apaga el servidor.
+
+Acceso:
+- Desde el servidor: http://localhost:8000
+- Desde la LAN: `http://<ip-del-servidor>:8000`
+
+Puede que la primera vez haga falta abrir el puerto 8000 en el firewall de Windows.
+
+**Nota:** el servidor CCN esta encendido 24/7 y nadie cierra sesion, asi que la ventana queda siempre abierta y el servicio queda disponible. Si en algun momento el servidor se reinicia, hay que volver a hacer doble click en `start.ps1`.
 
 ## Actualizar a la ultima version
 
 Cada vez que haya cambios en el repositorio:
 
-```powershell
-cd C:\ProductHub
-powershell -ExecutionPolicy Bypass -File update.ps1
-```
+1. Cerrar la ventana de `start.ps1` (con la X o Ctrl+C dentro)
+2. Correr:
+   ```powershell
+   cd C:\ProductHub
+   powershell -ExecutionPolicy Bypass -File update.ps1
+   ```
+3. Volver a doble-click en `start.ps1`
 
-Este script:
+El script `update.ps1`:
 - Hace `git pull` para bajar los cambios
 - Reinstala dependencias solo si `requirements.txt` cambio
 - Recompila el frontend
-- Reinicia el servicio si esta instalado
 - Muestra la lista de commits nuevos que se aplicaron
 
 Los **reportes cargados no se tocan** — viven en `C:\ProductHubData\`, fuera del proyecto.
-
-## Manejo del servicio
-
-Si se instalo como servicio con `install-service.ps1`:
-
-```powershell
-# Ver estado
-Get-Service ProductHubCCN
-
-# Arrancar / parar / reiniciar
-Start-Service   ProductHubCCN
-Stop-Service    ProductHubCCN
-Restart-Service ProductHubCCN
-```
-
-O desde la interfaz grafica: `services.msc` -> buscar "Product Hub CCN".
-
-Los logs quedan en `C:\ProductHub\logs\stdout.log` y `stderr.log`.
 
 ## Configuracion por variables de entorno
 
 - **`PRODUCT_HUB_DATA_DIR`** — Ruta donde se guardan los reportes. Default: `C:\ProductHubData`.
 - **`PRODUCT_HUB_PORT`** — Puerto del servidor. Default: `8000`.
 
-Si las cambias, hay que reiniciar el servicio para que las tome.
+Se setean permanentemente con:
+```powershell
+[Environment]::SetEnvironmentVariable("PRODUCT_HUB_PORT", "8080", "Machine")
+```
+
+Reiniciar `start.ps1` para que las tome.
 
 ## Autenticacion con GitHub (repo privado)
 
-Al clonar y hacer pull, Git va a pedir credenciales. Ver las opciones en el `README-DEPLOY-KEYS.md` (o preguntarle al owner del repo). La mas segura para un servidor es una **Deploy Key SSH** de solo lectura.
+Al clonar y hacer pull, Git va a pedir credenciales. Las opciones estan documentadas aparte — la mas segura para un servidor es una **Deploy Key SSH** de solo lectura, generada especificamente para este equipo.
 
 ## Problemas comunes
 
 - **"python no se reconoce"** — Python no esta en el PATH. Reinstalar y tildar "Add to PATH".
 - **"npm no se reconoce"** — Node.js no esta en el PATH. Cerrar y reabrir PowerShell despues de instalar.
-- **Puerto 8000 ocupado** — Cambiar el puerto con `$env:PRODUCT_HUB_PORT = "8080"` y volver a instalar el servicio.
-- **El servicio no arranca** — Revisar `C:\ProductHub\logs\stderr.log`.
-- **Errores de permisos** — Correr PowerShell como Administrador para los scripts que registran servicios.
+- **Puerto 8000 ocupado** — Cambiar el puerto con `[Environment]::SetEnvironmentVariable("PRODUCT_HUB_PORT", "8080", "Machine")` y volver a arrancar.
+- **La ventana se cierra sola** — Correr desde una terminal (`powershell.exe`) y ejecutar `.\start.ps1` para ver el mensaje de error.
+- **"Access denied" al instalar dependencias** — Correr el PowerShell como Administrador solo para `install.ps1` la primera vez.
 
 ## Backup
 
-Solo hay que respaldar `C:\ProductHubData\` — es la unica carpeta que contiene datos reales del usuario. Todo lo demas se puede regenerar clonando el repo y corriendo `install.ps1`.
+Solo hay que respaldar `C:\ProductHubData\` — es la unica carpeta con datos reales. Todo lo demas se regenera clonando el repo y corriendo `install.ps1`.
+
+## Alternativa: correrlo como servicio Windows
+
+Si en algun momento se prefiere que el servidor arranque solo al bootear (sin depender de la ventana abierta), existe `install-service.ps1` que lo registra como servicio Windows usando NSSM. Requiere permisos de Administrador y agrega complejidad extra — solo tiene sentido si nadie se va a acordar de arrancar `start.ps1` despues de un reinicio.

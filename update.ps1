@@ -46,15 +46,15 @@ npm run build
 if ($LASTEXITCODE -ne 0) { Write-Host "  ERROR en npm run build" -ForegroundColor Red; exit 1 }
 Set-Location ..
 
-# 4. Reiniciar el servicio si esta instalado
-Write-Host "`n[4/4] Reiniciando servicio (si existe)..." -ForegroundColor Yellow
+# 4. Reiniciar el servidor
+Write-Host "`n[4/4] Aplicar los cambios al servidor..." -ForegroundColor Yellow
 $service = Get-Service -Name "ProductHubCCN" -ErrorAction SilentlyContinue
 if ($service) {
     Restart-Service -Name "ProductHubCCN"
     Write-Host "  Servicio ProductHubCCN reiniciado" -ForegroundColor Green
 } else {
-    Write-Host "  El servicio no esta instalado. Si estas corriendo start.ps1 manualmente," -ForegroundColor Yellow
-    Write-Host "  cerra esa ventana y volvela a abrir." -ForegroundColor Yellow
+    Write-Host "  Cerra la ventana de start.ps1 y volvela a abrir para aplicar los cambios." -ForegroundColor Yellow
+    Write-Host "  (Doble click en start.ps1)" -ForegroundColor Yellow
 }
 
 Write-Host "`n==================================================" -ForegroundColor Cyan
