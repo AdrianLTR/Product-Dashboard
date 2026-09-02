@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import { useLargeSkuList } from "../hooks/useLargeSkuList";
 
 const FiltersContext = createContext(null);
 
@@ -14,6 +15,10 @@ export function FiltersProvider({ children }) {
   const [categoria, setCategoria] = useState("");
   const [kpiTypes, setKpiTypes] = useState([]); // toggle multi-select desde el Dashboard
   const [skuList, setSkuList] = useState(""); // listado pegado para comparar contra el reporte
+  // Cuando skuList es grande, useLargeSkuList lo postea y devuelve
+  // sku_list_id en `skuParams`. Cuando es chico, `skuParams` trae `skus`
+  // inline directo. Asi la URL nunca se pasa del limite del servidor.
+  const { params: skuParams, posting: skuListPosting } = useLargeSkuList(skuList);
   const [etiquetas, setEtiquetas] = useState([]); // Etiquetas SL seleccionadas (OR entre ellas)
   // Combinaciones EXACTAS de etiquetas. Cada elemento es el string "TAG1,TAG2"
   // con las etiquetas ya ordenadas (asi el JSON de la combinacion es unico).
@@ -60,22 +65,19 @@ export function FiltersProvider({ children }) {
     setEtiquetaCombos([]);
   }
 
-  const asQuery = useMemo(
-    () => ({
-      website: chips.web.join(","),
-      estado: chips.estado.join(","),
-      formato,
-      sku,
-      nombre,
-      marca,
-      familia,
-      categoria,
-      skus: skuList.trim(),
-      etiqueta: etiquetas.join(","),
-      etiqueta_combos: etiquetaCombos.join("~"),
-    }),
-    [chips, formato, sku, nombre, marca, familia, categoria, skuList, etiquetas, etiquetaCombos]
-  );
+  const asQuery = useMemo(() => ({
+    website: chips.web.join(","),
+    estado: chips.estado.join(","),
+    formato,
+    sku,
+    nombre,
+    marca,
+    familia,
+    categoria,
+    ...skuParams,
+    etiqueta: etiquetas.join(","),
+    etiqueta_combos: etiquetaCombos.join("~"),
+  }), [chips, formato, sku, nombre, marca, familia, categoria, skuParams, etiquetas, etiquetaCombos]);
 
   return (
     <FiltersContext.Provider
@@ -83,7 +85,7 @@ export function FiltersProvider({ children }) {
         chips, toggleChip, setEstadoExclusive, formato, setFormato, sku, setSku,
         nombre, setNombre, marca, setMarca, familia, setFamilia,
         categoria, setCategoria,
-        kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList,
+        kpiTypes, toggleKpiType, setKpiTypes, skuList, setSkuList, skuListPosting,
         etiquetas, toggleEtiqueta, setEtiquetas,
         etiquetaCombos, toggleEtiquetaCombo, setEtiquetaCombos,
         reset, asQuery,

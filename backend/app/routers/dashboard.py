@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
 from ..brands import is_private_brand
-from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products
+from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products, resolve_skus
 from ..product import Product
 from ..utils import etiquetas_of, has_price, is_empty, is_priority, stores_of
 
@@ -59,6 +59,7 @@ def dashboard(
     nombre: str | None = Query(None),
     familia: str | None = Query(None),
     skus: str | None = Query(None),
+    sku_list_id: str | None = Query(None, description="Id devuelto por POST /api/sku-lists para listas grandes"),
     departamento: str | None = Query(None),
     etiqueta: str | None = Query(None),
     etiqueta_combos: str | None = Query(None),
@@ -68,6 +69,7 @@ def dashboard(
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
 
+    skus = resolve_skus(skus, sku_list_id)
     all_rows = get_report_products(report_id)
     rows = apply_dashboard_filters(
         all_rows,

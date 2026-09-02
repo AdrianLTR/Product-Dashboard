@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
-from ..filters import get_report_products, parse_sku_list
+from ..filters import get_report_products, parse_sku_list, resolve_skus
 from ..product import Product
 from ..utils import has_price, is_empty
 
@@ -54,12 +54,14 @@ def compare_reports(
     target_id: int = Query(..., description="Reporte nuevo a comparar"),
     changes_limit: int = Query(200, ge=1, le=2000),
     skus: str | None = Query(None, description="Lista de SKUs para filtrar"),
+    sku_list_id: str | None = Query(None, description="Id devuelto por POST /api/sku-lists para listas grandes"),
 ):
     base_report = storage.get_report_meta(base_id)
     target_report = storage.get_report_meta(target_id)
     if not base_report or not target_report:
         raise HTTPException(404, "Reporte no encontrado")
 
+    skus = resolve_skus(skus, sku_list_id)
     base_rows = get_report_products(base_id)
     target_rows = get_report_products(target_id)
     parsed_skus = parse_sku_list(skus)

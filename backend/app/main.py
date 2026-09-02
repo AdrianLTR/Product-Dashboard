@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .routers import category_website, compare, dashboard, executive, exports, products, reports, stores, trends
+from .routers import category_website, compare, dashboard, executive, exports, products, reports, sku_lists, stores, trends
 
 app = FastAPI(title="Product Hub CCN")
 
@@ -27,6 +27,7 @@ app.include_router(trends.router)
 app.include_router(exports.router)
 app.include_router(executive.router)
 app.include_router(category_website.router)
+app.include_router(sku_lists.router)
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 if FRONTEND_DIST.exists():

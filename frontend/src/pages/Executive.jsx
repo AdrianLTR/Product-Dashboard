@@ -4,6 +4,7 @@ import DeltaModal from "../components/DeltaModal";
 import DrillModal from "../components/DrillModal";
 import { reportDate as fmtReportDate, reportSortValue } from "../dates";
 import { useReports } from "../context/ReportContext";
+import { useLargeSkuList } from "../hooks/useLargeSkuList";
 
 const DRILL_PARAMS = {
   "Total SKU": {},
@@ -181,6 +182,9 @@ export default function Executive() {
   const [skuDraft, setSkuDraft] = useState("");
   const [skuList, setSkuList] = useState("");
   const [showSkuPanel, setShowSkuPanel] = useState(false);
+  // Cuando el listado es grande, se sube por POST para esquivar el limite
+  // de tamano de las URLs. Ver useLargeSkuList.
+  const { params: skuParams, posting: skuListPosting } = useLargeSkuList(skuList);
 
   // Filtros por Departamento (single) y Combinaciones de etiquetas (multi checkboxes)
   const [departamentoFilter, setDepartamentoFilter] = useState("");
@@ -219,18 +223,19 @@ export default function Executive() {
     if (!reportId) return;
     setError(null);
     setData(null);
+    // Si el listado es grande y el POST aun no termino, esperar (evita
+    // mandar una query sin filtro y traer el reporte entero).
+    if (skuListPosting) return;
     api
-      .getExecutive(
-        reportId,
-        compareId || undefined,
-        skuList.trim() || undefined,
-        departamentoFilter || undefined,
-        undefined,
-        etiquetaCombosFilter.length ? etiquetaCombosFilter.join("~") : undefined,
-      )
+      .getExecutive(reportId, {
+        compare_id: compareId || undefined,
+        departamento: departamentoFilter || undefined,
+        etiqueta_combos: etiquetaCombosFilter.length ? etiquetaCombosFilter.join("~") : undefined,
+        ...skuParams,
+      })
       .then(setData)
       .catch((err) => setError(err.message));
-  }, [reportId, compareId, skuList, departamentoFilter, etiquetaCombosFilter]);
+  }, [reportId, compareId, skuParams, skuListPosting, departamentoFilter, etiquetaCombosFilter]);
 
   const visibleStores = useMemo(() => {
     if (!data) return [];
@@ -273,7 +278,11 @@ export default function Executive() {
                 {data.previous
                   ? <> · vs {data.previous.filename}</>
                   : <> · no hay reporte de comparación, no hay deltas</>}
-                {skuList.trim() && <> · <span style={{ color: "var(--teal)" }}>filtrado por listado de SKUs</span></>}
+                {skuList.trim() && (
+                  <> · <span style={{ color: "var(--teal)" }}>
+                    filtrado por listado de SKUs{skuListPosting && " (subiendo…)"}
+                  </span></>
+                )}
                 {departamentoFilter && <> · <span style={{ color: "var(--teal)" }}>dpto: {departamentoFilter}</span></>}
                 {etiquetaCombosFilter.length > 0 && <> · <span style={{ color: "var(--teal)" }}>{etiquetaCombosFilter.length} combinacion{etiquetaCombosFilter.length === 1 ? "" : "es"} de etiquetas</span></>}
               </>
@@ -519,7 +528,7 @@ export default function Executive() {
             ...(drill.website ? { website: drill.website } : {}),
             ...(departamentoFilter ? { departamento: departamentoFilter } : {}),
             ...(etiquetaCombosFilter.length ? { etiqueta_combos: etiquetaCombosFilter.join("~") } : {}),
-            ...(skuList.trim() ? { skus: skuList.trim() } : {}),
+            ...skuParams,
           }}
           onClose={() => setDrill(null)}
         />
@@ -532,9 +541,11 @@ export default function Executive() {
           label={delta.label}
           website={delta.website}
           compareId={compareId || undefined}
-          skus={skuList.trim() || undefined}
-          departamento={departamentoFilter || undefined}
-          etiquetaCombos={etiquetaCombosFilter.length ? etiquetaCombosFilter.join("~") : undefined}
+          extraParams={{
+            ...skuParams,
+            ...(departamentoFilter ? { departamento: departamentoFilter } : {}),
+            ...(etiquetaCombosFilter.length ? { etiqueta_combos: etiquetaCombosFilter.join("~") } : {}),
+          }}
           onClose={() => setDelta(null)}
         />
       )}

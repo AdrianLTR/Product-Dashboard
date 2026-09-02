@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from .. import storage
-from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products
+from ..filters import apply_dashboard_filters, apply_kpi_type_filter, get_report_products, resolve_skus
 from .compare import compare_reports
 from .stores import store_metrics
 
@@ -72,6 +72,7 @@ def export_products(
     sku: str | None = Query(None),
     nombre: str | None = Query(None),
     skus: str | None = Query(None),
+    sku_list_id: str | None = Query(None),
     departamento: str | None = Query(None),
     etiqueta: str | None = Query(None),
     etiqueta_combos: str | None = Query(None),
@@ -79,6 +80,7 @@ def export_products(
     """Exporta la vista de productos filtrada (misma logica del Dashboard) a xlsx."""
     if not storage.get_report_meta(report_id):
         raise HTTPException(404, "Reporte no encontrado")
+    skus = resolve_skus(skus, sku_list_id)
     rows = get_report_products(report_id)
     rows = apply_dashboard_filters(
         rows, website=website, marca=marca, categoria=categoria, estado=estado,

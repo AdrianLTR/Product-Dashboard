@@ -68,7 +68,7 @@ function countByMotivo(rows) {
 
 // Modal que explica un delta del Resumen Ejecutivo: que SKUs ENTRARON al
 // indicador y cuales SALIERON entre los dos reportes comparados.
-export default function DeltaModal({ reportId, indicator, label, website, compareId, skus, departamento, etiqueta, etiquetaCombos, onClose }) {
+export default function DeltaModal({ reportId, indicator, label, website, compareId, extraParams, onClose }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("entraron");
@@ -80,10 +80,10 @@ export default function DeltaModal({ reportId, indicator, label, website, compar
     setError(null);
     setData(null);
     api
-      .getExecutiveDelta(reportId, { indicator, website, compare_id: compareId, skus, departamento, etiqueta, etiqueta_combos: etiquetaCombos })
+      .getExecutiveDelta(reportId, { indicator, website, compare_id: compareId, ...(extraParams || {}) })
       .then(setData)
       .catch((err) => setError(err.message));
-  }, [reportId, indicator, website, compareId, skus, departamento, etiqueta, etiquetaCombos]);
+  }, [reportId, indicator, website, compareId, extraParams]);
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();

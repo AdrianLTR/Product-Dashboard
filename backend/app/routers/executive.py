@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from .. import storage
 from ..departments import departamento_of
-from ..filters import csv_list, get_report_products, parse_sku_list
+from ..filters import csv_list, get_report_products, parse_sku_list, resolve_skus
 from ..product import Product
 from ..utils import etiquetas_of, has_price, is_complete, is_empty, is_priority, kpi_score, stores_of
 
@@ -140,6 +140,7 @@ def executive(
     report_id: int,
     compare_id: int | None = Query(None, description="Reporte contra el que comparar. Si se omite, usa el inmediatamente anterior."),
     skus: str | None = Query(None, description="Lista de SKUs para filtrar (separados por coma, espacio o salto de linea)"),
+    sku_list_id: str | None = Query(None, description="Id devuelto por POST /api/sku-lists para listas grandes"),
     departamento: str | None = Query(None, description="CSV: uno o mas departamentos (OR entre ellos)"),
     etiqueta: str | None = Query(None, description="CSV: una o mas etiquetas SL (OR entre ellas)"),
     etiqueta_combos: str | None = Query(None, description="Combinaciones EXACTAS: combos separados por ~, tags dentro por coma"),
@@ -148,6 +149,7 @@ def executive(
     if not meta:
         raise HTTPException(404, "Reporte no encontrado")
 
+    skus = resolve_skus(skus, sku_list_id)
     prev_meta = _resolve_previous(report_id, compare_id)
 
     cur_rows = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta, etiqueta_combos)
@@ -282,6 +284,7 @@ def executive_delta(
     compare_id: int | None = Query(None),
     website: str | None = Query(None, description="Acotar a un website; si se omite, es global"),
     skus: str | None = Query(None, description="Lista de SKUs para filtrar"),
+    sku_list_id: str | None = Query(None),
     departamento: str | None = Query(None, description="CSV: uno o mas departamentos"),
     etiqueta: str | None = Query(None, description="CSV: una o mas etiquetas SL"),
     etiqueta_combos: str | None = Query(None, description="Combinaciones EXACTAS"),
@@ -294,6 +297,7 @@ def executive_delta(
     if not meta:
         raise HTTPException(404, "Reporte no encontrado")
 
+    skus = resolve_skus(skus, sku_list_id)
     prev_meta = _resolve_previous(report_id, compare_id)
 
     cur_rows_all = _filter_by_scope(get_report_products(report_id), skus, departamento, etiqueta, etiqueta_combos)

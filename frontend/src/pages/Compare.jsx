@@ -3,6 +3,7 @@ import { api } from "../api";
 import StatCard from "../components/StatCard";
 import { reportDate, reportSortValue } from "../dates";
 import { useReports } from "../context/ReportContext";
+import { useLargeSkuList } from "../hooks/useLargeSkuList";
 
 export default function Compare() {
   const { reports, compareBaseId, setCompareBaseId, compareTargetId, setCompareTargetId } = useReports();
@@ -21,6 +22,7 @@ export default function Compare() {
   const [skuDraft, setSkuDraft] = useState("");
   const [skuList, setSkuList] = useState("");
   const [showSkuPanel, setShowSkuPanel] = useState(false);
+  const { params: skuParams, posting: skuListPosting } = useLargeSkuList(skuList);
 
   useEffect(() => {
     if (!sorted.length) return;
@@ -43,8 +45,9 @@ export default function Compare() {
     if (!baseId || !targetId) return;
     setError(null);
     setData(null);
-    api.compareReports(baseId, targetId, skuList.trim() || undefined).then(setData).catch((err) => setError(err.message));
-  }, [baseId, targetId, skuList]);
+    if (skuListPosting) return;
+    api.compareReports(baseId, targetId, skuParams).then(setData).catch((err) => setError(err.message));
+  }, [baseId, targetId, skuParams, skuListPosting]);
 
   if (reports.length < 2) {
     return <div className="emp">Necesitas al menos dos reportes cargados para comparar. Ve a "Cargar Reporte".</div>;
@@ -57,7 +60,11 @@ export default function Compare() {
           <div className="sh-title">Comparar Reportes</div>
           <div className="sh-sub">
             Compara el reporte base (anterior) contra el reporte nuevo
-            {skuList.trim() && <> · <span style={{ color: "var(--teal)" }}>filtrado por listado de SKUs</span></>}
+            {skuList.trim() && (
+              <> · <span style={{ color: "var(--teal)" }}>
+                filtrado por listado de SKUs{skuListPosting && " (subiendo…)"}
+              </span></>
+            )}
           </div>
         </div>
         <div className="ml fb">

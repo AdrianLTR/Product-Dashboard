@@ -92,13 +92,18 @@ export const api = {
     invalidateApiCache(); // hay reporte nuevo → todo listing/dashboard debe refrescarse
     return last;
   },
+  storeSkuList: (skusText) => _fetch("/sku-lists", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ skus: skusText }),
+  }),
   getDashboard: (reportId, filters) => request(`/reports/${reportId}/dashboard${qs(filters)}`),
   getStores: (reportId) => request(`/reports/${reportId}/stores`),
   getProducts: (reportId, params) => request(`/reports/${reportId}/products${qs(params)}`),
-  compareReports: (baseId, targetId, skus) => request(`/compare${qs({ base_id: baseId, target_id: targetId, skus })}`),
+  compareReports: (baseId, targetId, extra = {}) => request(`/compare${qs({ base_id: baseId, target_id: targetId, ...extra })}`),
   getTrends: () => request("/trends"),
-  getExecutive: (reportId, compareId, skus, departamento, etiqueta, etiqueta_combos) =>
-    request(`/reports/${reportId}/executive${qs({ compare_id: compareId, skus, departamento, etiqueta, etiqueta_combos })}`),
+  getExecutive: (reportId, params = {}) =>
+    request(`/reports/${reportId}/executive${qs(params)}`),
   getCategoryWebsite: (reportId, params) =>
     request(`/reports/${reportId}/category-website${qs(params)}`),
   getExecutiveDelta: (reportId, params) =>

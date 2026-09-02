@@ -1,5 +1,6 @@
 import re
 
+from . import sku_lists as _sku_lists
 from . import storage
 from .product import Product
 from .brands import is_private_brand
@@ -28,6 +29,21 @@ def parse_sku_list(value: str | None) -> list[str]:
     if not value:
         return []
     return [s.strip() for s in _SKU_SPLIT_RE.split(value) if s.strip()]
+
+
+def resolve_skus(skus: str | None, sku_list_id: str | None) -> str | None:
+    """Cuando el listado es muy grande no entra en la URL. El frontend lo
+    postea a /api/sku-lists, recibe un id corto y lo manda por query. Aca
+    resolvemos: si viene sku_list_id lo cambiamos por el texto guardado.
+    Si el id no existe (expiro, servidor reiniciado) elevamos 410 Gone —
+    el frontend lo detecta y re-postea automaticamente el listado."""
+    if sku_list_id:
+        from fastapi import HTTPException
+        text = _sku_lists.get(sku_list_id)
+        if text is None:
+            raise HTTPException(410, "sku_list_id expirado; volver a postear la lista")
+        return text
+    return skus
 
 
 def parse_etiqueta_combos(value: str | None) -> list[frozenset]:
