@@ -121,7 +121,12 @@ def export_compare(
     target_id: int = Query(...),
 ):
     """Exporta la comparacion entre dos reportes a xlsx (4 hojas)."""
-    data = compare_reports(base_id=base_id, target_id=target_id, changes_limit=2000)
+    # Llamada directa a la funcion del endpoint: hay que pasar explicitamente
+    # los parametros opcionales, si no quedan como objetos Query(None)
+    # (truthy) y resolve_skus los toma como un sku_list_id inexistente -> 410.
+    data = compare_reports(
+        base_id=base_id, target_id=target_id, changes_limit=2000, skus=None, sku_list_id=None,
+    )
 
     s = data["summary"]
     resumen = pd.DataFrame(
